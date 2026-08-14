@@ -1,0 +1,21 @@
+{
+  "schema_version": 3,
+  "artifact_type": "research_record",
+  "brief_file": "",
+  "completed_at": "",
+  "deliverable_path": "",
+  "routing": {
+    "research_mode": "industry_overview",
+    "capital_market_stage": "not_applicable",
+    "research_archetype": "其他",
+    "technology_materiality": "非核心",
+    "company_maturity": "不适用",
+    "information_availability": "稀疏",
+    "output_profile": "industry_consumer"
+  },
+  "key_conclusions": [],
+  "coverage": {"required_sections": [], "completed_sections": [], "competition_clusters": [], "source_counts_by_tier": {"A": 0, "B": 0, "C": 0, "D": 0}},
+  "stage_artifacts": {"brief": "", "evidence_ledger": "", "competition_map": "", "narrative_draft": "", "delivery_check": ""},
+  "quality_checks": {"market_scope_separated": false, "investment_points_titled": false, "counterevidence_present": false, "primary_market_metrics_realistic": false, "narrative_contract_passed": false, "content_contract_passed": false, "artifact_reconciliation_passed": false, "all_sheets_rendered": false},
+  "limitations": []
+}

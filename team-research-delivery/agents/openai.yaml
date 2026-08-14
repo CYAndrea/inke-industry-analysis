@@ -1,0 +1,4 @@
+interface:
+  display_name: "团队研究交付制作"
+  short_description: "按飞书、Word、Excel 或 PDF 制作研究成品并检查版式"
+  default_prompt: "使用 $team-research-delivery 制作行业研究交付物。"

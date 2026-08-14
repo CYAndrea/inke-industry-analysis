@@ -1,0 +1,14 @@
+{
+  "schema_version": 3,
+  "artifact_type": "delivery_check",
+  "file_path": "",
+  "format": "Excel",
+  "sheets": [],
+  "rendered_sheets": [],
+  "clipped_text": [],
+  "missing_links": [],
+  "formula_errors": [],
+  "visual_repairs": [],
+  "visualizations": [],
+  "passed": false
+}

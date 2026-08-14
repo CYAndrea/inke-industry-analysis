@@ -1,0 +1,4 @@
+interface:
+  display_name: "团队研究叙事编辑"
+  short_description: "将行业研究分析改写为连贯咨询叙事并隐藏内部分析脚手架"
+  default_prompt: "使用 $team-research-editorial 将研究分析改写为读者可连续阅读的咨询叙事稿。"

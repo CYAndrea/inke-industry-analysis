@@ -1,0 +1,20 @@
+{
+  "schema_version": 3,
+  "artifact_type": "narrative_draft",
+  "central_thesis": "",
+  "argument_sequence": [],
+  "investment_points": [],
+  "sections": [
+    {
+      "id": "S01",
+      "title": "",
+      "paragraphs": [],
+      "argument_chain": {"conclusion": "", "mechanism": "", "evidence": "", "investment_implication": "", "boundary": ""},
+      "evidence_ids": [],
+      "table_justification": "",
+      "visualizations": []
+    }
+  ],
+  "tracking_items": [],
+  "editorial_checks": {"scaffolding_hidden": false, "paragraphs_connected": false, "tables_only_when_necessary": false, "reader_can_follow_top_to_bottom": false}
+}

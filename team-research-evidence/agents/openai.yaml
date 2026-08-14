@@ -1,0 +1,4 @@
+interface:
+  display_name: "团队研究证据与市场"
+  short_description: "建立来源台账并完成行业、市场、供需与技术路线证据分析"
+  default_prompt: "使用 $team-research-evidence 完成行业证据分析。"

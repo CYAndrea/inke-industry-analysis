@@ -1,0 +1,4 @@
+interface:
+  display_name: "团队研究启动"
+  short_description: "建立并校验行业研究任务卡、核心判断、反证条件与研究边界"
+  default_prompt: "使用 $team-research-intake 建立行业研究任务卡。"
