@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "font": "Microsoft YaHei",
+  "font_sizes": {"title": 20, "section": 13, "body": 13, "table": 11, "source": 11},
+  "row_heights": {"title": 42, "subtitle": 26, "section": 30, "paragraph": 82, "source": 34, "table": 62},
+  "column_widths": {"A": 21, "B": 21, "C": 21, "D": 21, "E": 21, "F": 21, "G": 21, "H": 21},
+  "colors": {
+    "ink": "#2E3235", "muted": "#6E7477", "paper": "#FBFAF8", "white": "#FFFFFF",
+    "title": "#5B6266", "line": "#D8DDDA", "mauve": "#C9B9B4", "rose": "#EDE4E1",
+    "sage": "#DDE8E0", "blue": "#DDE7EE", "sand": "#EEE5D7", "mist": "#EEF1EF", "link": "#24638A"
+  },
+  "layout": {"columns": 8, "max_table_columns": 8, "paragraphs_per_sheet_min": 2, "paragraphs_per_sheet_max": 4, "format_used_range_only": true}
+}

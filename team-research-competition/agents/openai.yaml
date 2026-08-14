@@ -1,0 +1,4 @@
+interface:
+  display_name: "团队研究竞品与公司"
+  short_description: "完成竞品地图、公司比较、投资要点与现实可得的核验事项"
+  default_prompt: "使用 $team-research-competition 完成竞品与公司研究。"

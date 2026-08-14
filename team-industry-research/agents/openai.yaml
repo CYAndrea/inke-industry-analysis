@@ -1,0 +1,4 @@
+interface:
+  display_name: "团队行业研究"
+  short_description: "支持行业研究、项目筛选与团队实战经验持续沉淀的工作流"
+  default_prompt: "使用 $team-industry-research 研究一个行业；我将提供行业主题、参考标的和希望交付的格式。"

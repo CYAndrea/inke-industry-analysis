@@ -1,0 +1,4 @@
+interface:
+  display_name: "团队研究质量验收"
+  short_description: "核验研究边界、来源、判断、交付质量、限制条件与研究记录"
+  default_prompt: "使用 $team-research-quality 验收行业研究成果。"
