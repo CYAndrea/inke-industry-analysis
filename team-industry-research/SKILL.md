@@ -7,16 +7,16 @@ description: 当用户明确提到“行业研究”“行业分析”“行研�
 
 本 Skill 负责研究编排与最终门禁。先读取 `references/execution-contracts.md` 与 `references/research-artifact-schema.json`，按任务卡选择研究模式并建立阶段产物。所有阶段产物统一使用 `schema_version=3`，字段不得自行改名或重复保存来源台账。
 
-| 阶段 | 子 Skill | 产出 |
+| 阶段 | 内置阶段模块 | 产出 |
 | --- | --- | --- |
-| 启动 | `$team-research-intake` | `brief.json`、研究模式、核心判断、反证条件 |
-| 证据与市场 | `$team-research-evidence` | `evidence-ledger.json`、市场与技术分析 |
-| 竞品与公司 | `$team-research-competition` | `competition-map.json`、投资要点、标的比较 |
-| 叙事编辑 | `$team-research-editorial` | `narrative-draft.json`、中心论点与读者版正文 |
-| 交付制作 | `$team-research-delivery` | 成品文件、`delivery-check.json` |
-| 质量验收 | `$team-research-quality` | `research-record.json`、修订清单与通过结果 |
+| 启动 | `subskills/team-research-intake/SKILL.md` | `brief.json`、研究模式、核心判断、反证条件 |
+| 证据与市场 | `subskills/team-research-evidence/SKILL.md` | `evidence-ledger.json`、市场与技术分析 |
+| 竞品与公司 | `subskills/team-research-competition/SKILL.md` | `competition-map.json`、投资要点、标的比较 |
+| 叙事编辑 | `subskills/team-research-editorial/SKILL.md` | `narrative-draft.json`、中心论点与读者版正文 |
+| 交付制作 | `subskills/team-research-delivery/SKILL.md` | 成品文件、`delivery-check.json` |
+| 质量验收 | `subskills/team-research-quality/SKILL.md` | `research-record.json`、修订清单与通过结果 |
 
-按顺序调用子 Skill。启动时先确认交付格式；用户未指定格式时，只询问交付为飞书文档、Word、Excel 还是 PDF，并暂停后续研究。每次研究只交付一个完整版本，不设置快速版与完整版。任务卡未通过校验时不开始正式检索；交付制作前必须完成证据、竞品或公司分析与叙事编辑；叙事稿未通过合同校验时不得开始制作成品；交付前运行 `scripts/validate_artifact_bundle.py --record <research-record.json>`，对账失败时不得交付。
+按顺序读取并执行 `subskills/` 下的阶段模块。它们随主 Skill 一起安装，不要求用户额外安装六个并列目录；只有用户明确需要独立调用某一阶段时，才将对应模块另行封装为独立 Skill。启动时先确认交付格式；用户未指定格式时，只询问交付为飞书文档、Word、Excel 还是 PDF，并暂停后续研究。每次研究只交付一个完整版本，不设置快速版与完整版。任务卡未通过校验时不开始正式检索；交付制作前必须完成证据、竞品或公司分析与叙事编辑；叙事稿未通过合同校验时不得开始制作成品；交付前运行 `scripts/validate_artifact_bundle.py --record <research-record.json>`，对账失败时不得交付。
 
 主 Skill 资源按需读取：`references/research-blueprint.md` 用于研究结构，`references/output-profiles.md` 用于输出路由，`references/evidence-and-company-research.md` 用于证据与公司信息路由，`references/consulting-narrative.md` 用于读者版叙事，`references/semantic-quality.md` 用于语义验收，`references/deliverable-specs.md` 用于交付，`references/visualization-system.md` 用于图表、技术图和外部素材决策，`references/quality-gates.md` 用于质量门禁。Excel 使用 `assets/excel-style.json` 与 `scripts/build_research_excel.mjs`，不得为常规研究重新编写整套格式系统。
 
