@@ -27,6 +27,59 @@ try {
 const { Workbook, SpreadsheetFile } = await import(pathToFileURL(artifactEntry).href);
 const narrative = JSON.parse(await fs.readFile(resolvePath(config.narrative_path), 'utf8'));
 const ledger = JSON.parse(await fs.readFile(resolvePath(config.evidence_ledger_path), 'utf8'));
+if (!config.completion_audit_path) throw new Error('completion_audit_path is required. Excel cannot be built before every profile module is audited.');
+const completionAudit = JSON.parse(await fs.readFile(resolvePath(config.completion_audit_path), 'utf8'));
+const profileContract = JSON.parse(await fs.readFile(path.join(skillRoot, 'references', 'output-profile-contracts.json'), 'utf8'));
+if (completionAudit.status !== 'complete' || completionAudit.blocking_gaps?.length) {
+  throw new Error('Completion audit is not complete. Resolve every blocking module before building Excel.');
+}
+const sourcePathFields = {
+  industry_analysis: 'industry_analysis_path',
+  company_analysis: 'company_analysis_path',
+  competition_map: 'competition_map_path',
+  analysis_synthesis: 'analysis_synthesis_path'
+};
+const sourceDocuments = {evidence_ledger: ledger, narrative_draft: narrative};
+for (const [artifact, field] of Object.entries(sourcePathFields)) {
+  if (config[field]) sourceDocuments[artifact] = JSON.parse(await fs.readFile(resolvePath(config[field]), 'utf8'));
+}
+
+function collectEvidenceIds(value, found = new Set()) {
+  if (Array.isArray(value)) value.forEach(item => collectEvidenceIds(item, found));
+  else if (value && typeof value === 'object') {
+    for (const [key, child] of Object.entries(value)) {
+      if (key === 'evidence_ids' && Array.isArray(child)) child.forEach(id => found.add(id));
+      else collectEvidenceIds(child, found);
+    }
+  }
+  return found;
+}
+
+const expectedModuleIds = profileContract.profiles[completionAudit.output_profile];
+if (!expectedModuleIds) throw new Error(`Unknown output profile: ${completionAudit.output_profile}`);
+const actualModuleIds = completionAudit.modules.map(item => item.id);
+if (new Set(actualModuleIds).size !== actualModuleIds.length || expectedModuleIds.length !== actualModuleIds.length || expectedModuleIds.some(id => !actualModuleIds.includes(id))) {
+  throw new Error('Completion audit modules do not exactly match the output profile contract.');
+}
+for (const module of completionAudit.modules) {
+  const rule = profileContract.modules[module.id];
+  if (module.status !== 'complete' || module.missing_elements?.length) throw new Error(`Module ${module.id} is incomplete.`);
+  if (JSON.stringify(module.required_elements) !== JSON.stringify(rule.required_elements) || rule.required_elements.some(item => !module.covered_elements.includes(item))) {
+    throw new Error(`Module ${module.id} does not cover every required element.`);
+  }
+  if (rule.delivery_type === 'table' && !module.tables?.length) throw new Error(`Module ${module.id} requires a structured table.`);
+  for (const requiredSource of rule.source_artifacts) {
+    if (!module.source_artifacts.includes(requiredSource)) throw new Error(`Module ${module.id} is missing required source artifact ${requiredSource}.`);
+  }
+  const sourceEvidence = new Set();
+  for (const sourceName of module.source_artifacts) {
+    const document = sourceDocuments[sourceName];
+    if (!document) throw new Error(`Config must provide ${sourcePathFields[sourceName] || sourceName} for module ${module.id}.`);
+    if (sourceName === 'evidence_ledger') document.claims.forEach(item => sourceEvidence.add(item.id));
+    else collectEvidenceIds(document).forEach(id => sourceEvidence.add(id));
+  }
+  if (module.evidence_ids.some(id => !sourceEvidence.has(id))) throw new Error(`Module ${module.id} contains evidence not present in its source artifacts.`);
+}
 const stylePath = config.style_path ? resolvePath(config.style_path) : path.join(skillRoot, 'assets', 'excel-style.json');
 const style = JSON.parse(await fs.readFile(stylePath, 'utf8'));
 const outputPath = resolvePath(config.output_path);
@@ -43,6 +96,7 @@ const R = style.row_heights;
 const font = style.font;
 const evidenceById = new Map(ledger.claims.map(item => [item.id, item]));
 const usedNames = new Set();
+const moduleLocations = [];
 
 function safeName(input) {
   const base = String(input).replace(/[\\/:*?\[\]]/g, '').slice(0, 31) || '研究页';
@@ -179,6 +233,34 @@ for (const section of narrative.sections) {
   sheet.freezePanes.freezeRows(4);
 }
 
+for (const module of completionAudit.modules) {
+  const sheet = wb.worksheets.add(safeName(`模块-${module.title}`));
+  title(sheet, module.title, `完成合同：${completionAudit.output_profile}`);
+  band(sheet, 4, '模块判断', C.sage);
+  paragraph(sheet, 5, module.analysis, C.paper);
+  sourceLine(sheet, 7, module.evidence_ids || []);
+  let row = 9;
+  for (const table of module.tables || []) {
+    if (table.columns.length > 8) throw new Error(`Module ${module.id} table ${table.title} exceeds eight columns.`);
+    band(sheet, row, table.title, C.blue);
+    row += 2;
+    const endColumn = String.fromCharCode(64 + table.columns.length);
+    sheet.getRange(`A${row}:${endColumn}${row + table.rows.length}`).values = [table.columns, ...table.rows];
+    styleTable(sheet, `A${row}:${endColumn}${row + table.rows.length}`);
+    sheet.getRange(`A${row + 1}:${endColumn}${row + table.rows.length}`).format.rowHeight = R.table;
+    row += table.rows.length + 3;
+  }
+  const endRow = Math.max(row - 1, 7);
+  moduleLocations.push({
+    module_id: module.id,
+    sheet: sheet.name,
+    range: `A1:H${endRow}`,
+    content_type: module.tables?.length ? 'narrative_and_table' : 'narrative',
+    evidence_ids: module.evidence_ids
+  });
+  sheet.freezePanes.freezeRows(4);
+}
+
 const tracking = wb.worksheets.add(safeName('跟踪清单'));
 title(tracking, '跟踪清单', config.subtitle || '');
 band(tracking, 4, '能够改变投资判断的事项', C.sand);
@@ -223,6 +305,7 @@ const delivery = {
   formula_errors: formulaErrors,
   visual_repairs: ['使用区域仅覆盖实际内容', '正文使用13号字和横向无内部边框文本区', '来源台账使用12号字并显示完整链接'],
   visualizations,
+  module_locations: moduleLocations,
   passed: formulaErrors.length === 0
 };
 await fs.writeFile(deliveryPath, JSON.stringify(delivery, null, 2), 'utf8');

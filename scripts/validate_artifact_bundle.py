@@ -11,6 +11,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_PATH = ROOT / "references" / "research-artifact-schema.json"
 SCHEMA = json.loads(SCHEMA_PATH.read_text(encoding="utf-8-sig"))
+PROFILE_CONTRACT_PATH = ROOT / "references" / "output-profile-contracts.json"
+PROFILE_CONTRACT = json.loads(PROFILE_CONTRACT_PATH.read_text(encoding="utf-8-sig"))
 
 
 def load(path):
@@ -168,6 +170,12 @@ def validate_routing_consistency(routing):
 
 def validate_brief_semantics(brief):
     errors = validate_routing_consistency(brief.get("routing", {}))
+    profile = brief.get("routing", {}).get("output_profile")
+    expected_sections = PROFILE_CONTRACT["profiles"].get(profile)
+    if expected_sections is None:
+        errors.append(f"no output profile completion contract found for {profile}")
+    elif set(brief.get("required_sections", [])) != set(expected_sections):
+        errors.append("brief.required_sections must exactly match the output profile contract")
     subject = brief.get("routing", {}).get("research_subject")
     target = brief.get("target_company", "").strip()
     if subject == "company" and not target:
@@ -234,6 +242,94 @@ def validate_narrative_source(narrative, synthesis):
     return []
 
 
+def artifact_evidence_ids(name, document):
+    if name == "evidence_ledger":
+        return {item["id"] for item in document.get("claims", [])}
+    return set(evidence_refs(document))
+
+
+def validate_completion_audit(audit, profile, docs, delivery):
+    errors = []
+    profile_modules = PROFILE_CONTRACT["profiles"].get(profile)
+    if not profile_modules:
+        return [f"no completion contract found for output_profile={profile}"]
+    definitions = PROFILE_CONTRACT["modules"]
+    modules = audit.get("modules", [])
+    module_ids = [item.get("id") for item in modules]
+    duplicates = [key for key, count in Counter(module_ids).items() if count > 1]
+    if duplicates:
+        errors.append(f"completion_audit has duplicate modules: {duplicates}")
+    if set(module_ids) != set(profile_modules):
+        missing = sorted(set(profile_modules) - set(module_ids))
+        extra = sorted(set(module_ids) - set(profile_modules))
+        errors.append(f"completion_audit modules do not match profile; missing={missing}, extra={extra}")
+    if audit.get("output_profile") != profile:
+        errors.append("completion_audit.output_profile must match routing.output_profile")
+    if audit.get("status") != "complete":
+        errors.append("completion_audit.status must be complete")
+    if audit.get("blocking_gaps"):
+        errors.append("completion_audit.blocking_gaps must be empty")
+
+    module_by_id = {item.get("id"): item for item in modules}
+    for module_id in profile_modules:
+        module = module_by_id.get(module_id)
+        if not module:
+            continue
+        rule = definitions[module_id]
+        if module.get("title") != rule["title"]:
+            errors.append(f"completion_audit.{module_id}.title must match the profile contract")
+        if module.get("required_elements") != rule["required_elements"]:
+            errors.append(f"completion_audit.{module_id}.required_elements must match the profile contract")
+        missing_elements = sorted(set(rule["required_elements"]) - set(module.get("covered_elements", [])))
+        if module.get("status") != "complete" or module.get("missing_elements") or missing_elements:
+            errors.append(f"completion_audit.{module_id} is incomplete; missing={missing_elements or module.get('missing_elements', [])}")
+        required_sources = set(rule["source_artifacts"])
+        recorded_sources = set(module.get("source_artifacts", []))
+        if not required_sources.issubset(recorded_sources):
+            errors.append(f"completion_audit.{module_id}.source_artifacts must include {sorted(required_sources)}")
+        available_refs = set()
+        for source_name in recorded_sources:
+            source = docs.get(source_name)
+            if source is None:
+                errors.append(f"completion_audit.{module_id} refers to unavailable artifact {source_name}")
+            else:
+                available_refs.update(artifact_evidence_ids(source_name, source))
+        module_refs = set(module.get("evidence_ids", []))
+        if not module_refs.issubset(available_refs):
+            errors.append(f"completion_audit.{module_id} uses evidence not present in its source artifacts")
+        tables = module.get("tables", [])
+        if rule["delivery_type"] == "table" and not tables:
+            errors.append(f"completion_audit.{module_id} requires a structured table")
+        for index, table in enumerate(tables):
+            columns = table.get("columns", [])
+            if len(columns) > 8:
+                errors.append(f"completion_audit.{module_id}.tables[{index}] exceeds eight Excel columns")
+            for row_index, row in enumerate(table.get("rows", [])):
+                if len(row) != len(columns):
+                    errors.append(f"completion_audit.{module_id}.tables[{index}].rows[{row_index}] column count mismatch")
+            if not set(table.get("evidence_ids", [])).issubset(module_refs):
+                errors.append(f"completion_audit.{module_id}.tables[{index}] evidence must be included in module evidence_ids")
+
+    locations = delivery.get("module_locations", [])
+    location_ids = [item.get("module_id") for item in locations]
+    location_counts = Counter(location_ids)
+    if set(location_ids) != set(profile_modules):
+        missing = sorted(set(profile_modules) - set(location_ids))
+        extra = sorted(set(location_ids) - set(profile_modules))
+        errors.append(f"delivery module locations do not match profile; missing={missing}, extra={extra}")
+    repeated = sorted(key for key, count in location_counts.items() if count != 1)
+    if repeated:
+        errors.append(f"delivery module locations must contain one visible location per module: {repeated}")
+    for location in locations:
+        module_id = location.get("module_id")
+        if location.get("sheet") not in delivery.get("sheets", []):
+            errors.append(f"delivery module {module_id} refers to an unknown sheet")
+        module = module_by_id.get(module_id, {})
+        if not set(location.get("evidence_ids", [])).issubset(set(module.get("evidence_ids", []))):
+            errors.append(f"delivery module {module_id} evidence must come from completion_audit")
+    return errors
+
+
 def validate_bundle(record_path):
     errors = []
     record_path = Path(record_path).resolve()
@@ -248,6 +344,7 @@ def validate_bundle(record_path):
         "competition_map": "competition_map",
         "analysis_synthesis": "analysis_synthesis",
         "narrative_draft": "narrative_draft",
+        "completion_audit": "completion_audit",
         "delivery_check": "delivery_check",
     }
     subject = record.get("routing", {}).get("research_subject")
@@ -277,6 +374,7 @@ def validate_bundle(record_path):
     competition = docs["competition_map"]
     synthesis = docs["analysis_synthesis"]
     narrative = docs["narrative_draft"]
+    completion = docs["completion_audit"]
     delivery = docs["delivery_check"]
 
     routing = brief["routing"]
@@ -313,6 +411,7 @@ def validate_bundle(record_path):
         + evidence_refs(competition)
         + evidence_refs(synthesis)
         + evidence_refs(narrative)
+        + evidence_refs(completion)
         + evidence_refs(delivery)
         + evidence_refs(record)
     )
@@ -322,6 +421,7 @@ def validate_bundle(record_path):
 
     synthesis_refs = set(evidence_refs(synthesis))
     errors.extend(validate_narrative_source(narrative, synthesis))
+    errors.extend(validate_completion_audit(completion, routing["output_profile"], docs, delivery))
     record_refs = set(evidence_refs(record.get("key_conclusions", [])))
     if not record_refs.issubset(synthesis_refs):
         errors.append("research_record key conclusions introduce evidence not approved by analysis_synthesis")
@@ -331,10 +431,13 @@ def validate_bundle(record_path):
     expected_counts = {tier: counts.get(tier, 0) for tier in "ABCD"}
     if recorded_counts != expected_counts:
         errors.append(f"coverage.source_counts_by_tier must equal {expected_counts}")
-    if set(brief["required_sections"]) - set(record["coverage"]["completed_sections"]):
-        errors.append("completed_sections does not cover brief.required_sections")
-    if set(brief["required_sections"]) != set(record["coverage"]["required_sections"]):
-        errors.append("record required_sections must match brief required_sections")
+    contract_sections = PROFILE_CONTRACT["profiles"][routing["output_profile"]]
+    if set(brief["required_sections"]) != set(contract_sections):
+        errors.append("brief.required_sections must exactly match the output profile contract")
+    if set(record["coverage"]["required_sections"]) != set(contract_sections):
+        errors.append("record required_sections must exactly match the output profile contract")
+    if set(record["coverage"]["completed_sections"]) != set(contract_sections):
+        errors.append("record completed_sections must be derived from all completed contract modules")
     cluster_names = [item["name"] for item in competition["clusters"]]
     if set(cluster_names) != set(record["coverage"]["competition_clusters"]):
         errors.append("record competition_clusters must match competition_map clusters")

@@ -266,9 +266,59 @@
         "limitations": {"type": "string"}
       }
     },
+    "completion_table": {
+      "type": "object",
+      "required": ["title", "columns", "rows", "evidence_ids"],
+      "properties": {
+        "title": {"type": "string", "minLength": 4},
+        "columns": {"type": "array", "minItems": 2, "items": {"type": "string", "minLength": 1}},
+        "rows": {"type": "array", "minItems": 1, "items": {"type": "array", "minItems": 2}},
+        "evidence_ids": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/evidence_ref"}}
+      }
+    },
+    "completion_module": {
+      "type": "object",
+      "required": ["id", "title", "status", "required_elements", "covered_elements", "missing_elements", "analysis", "evidence_ids", "source_artifacts", "tables"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z][a-z0-9_]+$"},
+        "title": {"type": "string", "minLength": 4},
+        "status": {"enum": ["complete", "incomplete", "not_applicable"]},
+        "required_elements": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 2}},
+        "covered_elements": {"type": "array", "items": {"type": "string", "minLength": 2}},
+        "missing_elements": {"type": "array", "items": {"type": "string", "minLength": 2}},
+        "analysis": {"type": "string", "minLength": 80},
+        "evidence_ids": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/evidence_ref"}},
+        "source_artifacts": {"type": "array", "minItems": 1, "items": {"enum": ["evidence_ledger", "industry_analysis", "company_analysis", "competition_map", "analysis_synthesis", "narrative_draft"]}},
+        "tables": {"type": "array", "items": {"$ref": "#/$defs/completion_table"}}
+      }
+    },
+    "completion_audit": {
+      "type": "object",
+      "required": ["schema_version", "artifact_type", "contract_version", "output_profile", "status", "modules", "blocking_gaps"],
+      "properties": {
+        "schema_version": {"const": 3},
+        "artifact_type": {"const": "completion_audit"},
+        "contract_version": {"const": 1},
+        "output_profile": {"enum_ref": "output_profile"},
+        "status": {"enum": ["complete", "incomplete"]},
+        "modules": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/completion_module"}},
+        "blocking_gaps": {"type": "array", "items": {"type": "string", "minLength": 2}}
+      }
+    },
+    "module_location": {
+      "type": "object",
+      "required": ["module_id", "sheet", "range", "content_type", "evidence_ids"],
+      "properties": {
+        "module_id": {"type": "string", "pattern": "^[a-z][a-z0-9_]+$"},
+        "sheet": {"type": "string", "minLength": 1},
+        "range": {"type": "string", "minLength": 3},
+        "content_type": {"enum": ["narrative", "table", "narrative_and_table"]},
+        "evidence_ids": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/evidence_ref"}}
+      }
+    },
     "delivery_check": {
       "type": "object",
-      "required": ["schema_version", "artifact_type", "file_path", "format", "sheets", "rendered_sheets", "clipped_text", "missing_links", "formula_errors", "visual_repairs", "visualizations", "passed"],
+      "required": ["schema_version", "artifact_type", "file_path", "format", "sheets", "rendered_sheets", "clipped_text", "missing_links", "formula_errors", "visual_repairs", "visualizations", "module_locations", "passed"],
       "properties": {
         "schema_version": {"const": 3},
         "artifact_type": {"const": "delivery_check"},
@@ -281,6 +331,7 @@
         "formula_errors": {"type": "array"},
         "visual_repairs": {"type": "array"},
         "visualizations": {"type": "array", "items": {"$ref": "#/$defs/visualization_record"}},
+        "module_locations": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/module_location"}},
         "passed": {"const": true}
       }
     },
@@ -318,13 +369,13 @@
         },
         "stage_artifacts": {
           "type": "object",
-          "required": ["brief", "evidence_ledger", "industry_analysis", "company_analysis", "competition_map", "analysis_synthesis", "narrative_draft", "delivery_check"],
-          "properties": {"brief": {"type": "string", "minLength": 1}, "evidence_ledger": {"type": "string", "minLength": 1}, "industry_analysis": {"type": "string", "minLength": 1}, "company_analysis": {"type": "string"}, "competition_map": {"type": "string", "minLength": 1}, "analysis_synthesis": {"type": "string", "minLength": 1}, "narrative_draft": {"type": "string", "minLength": 1}, "delivery_check": {"type": "string", "minLength": 1}}
+          "required": ["brief", "evidence_ledger", "industry_analysis", "company_analysis", "competition_map", "analysis_synthesis", "narrative_draft", "completion_audit", "delivery_check"],
+          "properties": {"brief": {"type": "string", "minLength": 1}, "evidence_ledger": {"type": "string", "minLength": 1}, "industry_analysis": {"type": "string", "minLength": 1}, "company_analysis": {"type": "string"}, "competition_map": {"type": "string", "minLength": 1}, "analysis_synthesis": {"type": "string", "minLength": 1}, "narrative_draft": {"type": "string", "minLength": 1}, "completion_audit": {"type": "string", "minLength": 1}, "delivery_check": {"type": "string", "minLength": 1}}
         },
         "quality_checks": {
           "type": "object",
-          "required": ["market_scope_separated", "investment_points_titled", "counterevidence_present", "primary_market_metrics_realistic", "industry_gate_passed", "company_gate_passed_or_not_applicable", "synthesis_gate_passed", "editorial_used_synthesis_only", "narrative_contract_passed", "content_contract_passed", "artifact_reconciliation_passed", "all_sheets_rendered"],
-          "properties": {"market_scope_separated": {"type": "boolean"}, "investment_points_titled": {"type": "boolean"}, "counterevidence_present": {"type": "boolean"}, "primary_market_metrics_realistic": {"type": "boolean"}, "industry_gate_passed": {"type": "boolean"}, "company_gate_passed_or_not_applicable": {"type": "boolean"}, "synthesis_gate_passed": {"type": "boolean"}, "editorial_used_synthesis_only": {"type": "boolean"}, "narrative_contract_passed": {"type": "boolean"}, "content_contract_passed": {"type": "boolean"}, "artifact_reconciliation_passed": {"type": "boolean"}, "all_sheets_rendered": {"type": "boolean"}}
+          "required": ["market_scope_separated", "investment_points_titled", "counterevidence_present", "primary_market_metrics_realistic", "industry_gate_passed", "company_gate_passed_or_not_applicable", "synthesis_gate_passed", "editorial_used_synthesis_only", "narrative_contract_passed", "content_contract_passed", "module_completion_passed", "artifact_reconciliation_passed", "all_sheets_rendered"],
+          "properties": {"market_scope_separated": {"type": "boolean"}, "investment_points_titled": {"type": "boolean"}, "counterevidence_present": {"type": "boolean"}, "primary_market_metrics_realistic": {"type": "boolean"}, "industry_gate_passed": {"type": "boolean"}, "company_gate_passed_or_not_applicable": {"type": "boolean"}, "synthesis_gate_passed": {"type": "boolean"}, "editorial_used_synthesis_only": {"type": "boolean"}, "narrative_contract_passed": {"type": "boolean"}, "content_contract_passed": {"type": "boolean"}, "module_completion_passed": {"type": "boolean"}, "artifact_reconciliation_passed": {"type": "boolean"}, "all_sheets_rendered": {"type": "boolean"}}
         },
         "limitations": {"type": "array"}
       }

@@ -1,0 +1,42 @@
+{
+  "contract_version": 1,
+  "modules": {
+    "industry_scope": {"title": "行业定义、边界与生命周期", "required_elements": ["行业定义", "分类与边界", "生命周期或发展阶段"], "source_artifacts": ["industry_analysis"], "delivery_type": "narrative"},
+    "consumer_demand": {"title": "用户、场景与需求", "required_elements": ["核心用户", "使用场景", "购买动机", "需求变化"], "source_artifacts": ["industry_analysis"], "delivery_type": "narrative"},
+    "consumer_product_brand": {"title": "品类、产品与品牌", "required_elements": ["品类结构", "产品结构", "品牌定位", "用户体验"], "source_artifacts": ["industry_analysis"], "delivery_type": "table"},
+    "consumer_channels_pricing": {"title": "渠道、价格与支付", "required_elements": ["获客渠道", "销售渠道", "价格体系", "支付或复购指标"], "source_artifacts": ["industry_analysis"], "delivery_type": "table"},
+    "consumer_supply_chain": {"title": "供应链与盈利机制", "required_elements": ["供应链结构", "关键成本", "议价权", "利润来源"], "source_artifacts": ["industry_analysis"], "delivery_type": "narrative"},
+    "technology_stack_routes": {"title": "技术栈与主流路线", "required_elements": ["技术栈", "主流路线", "路线差异", "商业影响"], "source_artifacts": ["industry_analysis"], "delivery_type": "table"},
+    "technology_engineering": {"title": "工程瓶颈与验证进度", "required_elements": ["具体问题", "形成原因", "当前解决状态", "投资影响"], "source_artifacts": ["industry_analysis"], "delivery_type": "table"},
+    "technology_supply_chain": {"title": "产业链、供需与商业化", "required_elements": ["产业链位置", "上游", "下游", "供需关系", "商业化进度"], "source_artifacts": ["industry_analysis"], "delivery_type": "table"},
+    "market_size_stage": {"title": "市场规模与增长阶段", "required_elements": ["口径", "地区", "期间", "规模或替代测算", "增长驱动"], "source_artifacts": ["industry_analysis"], "delivery_type": "table"},
+    "competition": {"title": "竞争格局与标的定位", "required_elements": ["竞争簇", "纳入对象", "类别与可比原因", "排除对象", "停止规则", "标的定位"], "source_artifacts": ["competition_map"], "delivery_type": "table"},
+    "industry_outlook": {"title": "行业趋势、风险与投资方向", "required_elements": ["增长驱动", "主要趋势", "反向证据", "行业风险", "投资方向"], "source_artifacts": ["industry_analysis", "analysis_synthesis"], "delivery_type": "narrative"},
+    "investment_points": {"title": "投资要点", "required_elements": ["三至五个有标题要点", "证据", "失效条件", "尽调动作"], "source_artifacts": ["analysis_synthesis", "narrative_draft"], "delivery_type": "table"},
+    "listing_identity": {"title": "上市主体与证券信息", "required_elements": ["上市主体", "交易所", "证券代码", "上市时间", "主体变更"], "source_artifacts": ["company_analysis"], "delivery_type": "table"},
+    "management_ownership": {"title": "管理层、股权与治理", "required_elements": ["核心管理层", "主要股东", "股权变化", "治理风险"], "source_artifacts": ["company_analysis"], "delivery_type": "table"},
+    "company_business_product": {"title": "主营业务与产品评价", "required_elements": ["主营业务", "产品矩阵", "收入机制", "业务评价", "产品评价"], "source_artifacts": ["company_analysis"], "delivery_type": "table"},
+    "financial_performance": {"title": "财务表现与盈利质量", "required_elements": ["历史收入", "利润", "现金流", "业务结构", "盈利能力", "利润质量"], "source_artifacts": ["company_analysis"], "delivery_type": "table"},
+    "technology_company_execution": {"title": "技术产品与经营兑现", "required_elements": ["技术路线", "产品路线", "客户与订单", "生产或部署", "研发", "资本开支"], "source_artifacts": ["company_analysis"], "delivery_type": "table"},
+    "consumer_company_execution": {"title": "品牌产品与经营兑现", "required_elements": ["品牌与产品结构", "渠道", "价格", "终端销售", "用户指标", "供应链"], "source_artifacts": ["company_analysis"], "delivery_type": "table"},
+    "integration_value_conversion": {"title": "技术向消费价值的转化", "required_elements": ["技术能力", "消费者价值", "定价能力", "毛利影响", "品牌差异"], "source_artifacts": ["industry_analysis", "company_analysis"], "delivery_type": "table"},
+    "valuation": {"title": "估值与情景分析", "required_elements": ["估值时点", "估值方法", "可比对象或不可比说明", "关键假设", "计算结果", "敏感项"], "source_artifacts": ["company_analysis", "analysis_synthesis"], "delivery_type": "table"},
+    "catalysts_risks_tracking": {"title": "催化剂、风险与跟踪指标", "required_elements": ["催化剂", "核心风险", "跟踪指标", "判断变化条件"], "source_artifacts": ["company_analysis", "analysis_synthesis"], "delivery_type": "table"},
+    "founders_team": {"title": "创始人与团队", "required_elements": ["创始人", "核心团队", "相关经历", "团队评价"], "source_artifacts": ["company_analysis"], "delivery_type": "table"},
+    "financing_history": {"title": "融资历程与估值", "required_elements": ["融资轮次", "融资时间", "投资方", "金额", "估值与口径限制"], "source_artifacts": ["company_analysis"], "delivery_type": "table"},
+    "customer_validation": {"title": "客户验证与商业进度", "required_elements": ["目标客户", "验证阶段", "订单或收入证据", "销售周期", "留存或复购"], "source_artifacts": ["company_analysis"], "delivery_type": "table"},
+    "diligence_actions": {"title": "风险与尽调动作", "required_elements": ["核心风险", "三至六项现实动作", "所需材料", "判断标准"], "source_artifacts": ["company_analysis", "analysis_synthesis"], "delivery_type": "table"},
+    "sources_limitations": {"title": "来源、限制与待核验事项", "required_elements": ["来源分层", "直达链接", "信息缺口", "待核验事项", "判断边界"], "source_artifacts": ["evidence_ledger", "analysis_synthesis"], "delivery_type": "table"}
+  },
+  "profiles": {
+    "industry_consumer": ["industry_scope", "consumer_demand", "consumer_product_brand", "consumer_channels_pricing", "consumer_supply_chain", "market_size_stage", "competition", "industry_outlook", "sources_limitations"],
+    "industry_technology": ["industry_scope", "technology_stack_routes", "technology_engineering", "technology_supply_chain", "market_size_stage", "competition", "industry_outlook", "sources_limitations"],
+    "industry_hybrid": ["industry_scope", "consumer_demand", "consumer_product_brand", "consumer_channels_pricing", "technology_stack_routes", "technology_engineering", "technology_supply_chain", "market_size_stage", "competition", "integration_value_conversion", "industry_outlook", "sources_limitations"],
+    "primary_consumer_company": ["industry_scope", "consumer_demand", "consumer_product_brand", "consumer_channels_pricing", "consumer_supply_chain", "market_size_stage", "competition", "industry_outlook", "investment_points", "founders_team", "financing_history", "company_business_product", "consumer_company_execution", "customer_validation", "diligence_actions", "sources_limitations"],
+    "primary_technology_company": ["industry_scope", "technology_stack_routes", "technology_engineering", "technology_supply_chain", "market_size_stage", "competition", "industry_outlook", "investment_points", "founders_team", "financing_history", "company_business_product", "technology_company_execution", "customer_validation", "diligence_actions", "sources_limitations"],
+    "primary_hybrid_company": ["industry_scope", "consumer_demand", "consumer_product_brand", "consumer_channels_pricing", "technology_stack_routes", "technology_engineering", "technology_supply_chain", "market_size_stage", "competition", "integration_value_conversion", "industry_outlook", "investment_points", "founders_team", "financing_history", "company_business_product", "consumer_company_execution", "technology_company_execution", "customer_validation", "diligence_actions", "sources_limitations"],
+    "secondary_consumer_company": ["industry_scope", "consumer_demand", "consumer_product_brand", "consumer_channels_pricing", "consumer_supply_chain", "market_size_stage", "competition", "industry_outlook", "investment_points", "listing_identity", "management_ownership", "company_business_product", "consumer_company_execution", "financial_performance", "valuation", "catalysts_risks_tracking", "sources_limitations"],
+    "secondary_technology_company": ["industry_scope", "technology_stack_routes", "technology_engineering", "technology_supply_chain", "market_size_stage", "competition", "industry_outlook", "investment_points", "listing_identity", "management_ownership", "company_business_product", "technology_company_execution", "financial_performance", "valuation", "catalysts_risks_tracking", "sources_limitations"],
+    "secondary_hybrid_company": ["industry_scope", "consumer_demand", "consumer_product_brand", "consumer_channels_pricing", "technology_stack_routes", "technology_engineering", "technology_supply_chain", "market_size_stage", "competition", "integration_value_conversion", "industry_outlook", "investment_points", "listing_identity", "management_ownership", "company_business_product", "consumer_company_execution", "technology_company_execution", "financial_performance", "valuation", "catalysts_risks_tracking", "sources_limitations"]
+  }
+}

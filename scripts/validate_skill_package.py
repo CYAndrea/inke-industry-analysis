@@ -47,7 +47,9 @@ def main():
         "agents/openai.yaml",
         "references/execution-contracts.md",
         "references/research-artifact-schema.json",
+        "references/output-profile-contracts.json",
         "assets/excel-style.json",
+        "assets/completion-audit.json",
         "scripts/build_research_excel.mjs",
         "scripts/validate_artifact_bundle.py",
     ]

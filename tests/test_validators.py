@@ -15,6 +15,37 @@ bundle = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(bundle)
 
 
+def profile_module_ids(profile="industry_technology"):
+    return list(bundle.PROFILE_CONTRACT["profiles"][profile])
+
+
+def valid_completion_audit(profile="industry_technology"):
+    modules = []
+    for module_id in profile_module_ids(profile):
+        rule = bundle.PROFILE_CONTRACT["modules"][module_id]
+        tables = []
+        if rule["delivery_type"] == "table":
+            tables = [{
+                "title": f"{rule['title']}明细",
+                "columns": ["项目", "结论"],
+                "rows": [[item, "已根据现有证据完成分析"] for item in rule["required_elements"]],
+                "evidence_ids": ["E01"],
+            }]
+        modules.append({
+            "id": module_id,
+            "title": rule["title"],
+            "status": "complete",
+            "required_elements": list(rule["required_elements"]),
+            "covered_elements": list(rule["required_elements"]),
+            "missing_elements": [],
+            "analysis": "该模块已经根据上游阶段产物完成逐项分析，并保留证据编号、判断边界和结构化信息。测试数据用于验证完成合同能够阻止缺失模块被误标记为完成，同时检查规定要素、必要表格和最终可见位置是否能够逐项对账。",
+            "evidence_ids": ["E01"],
+            "source_artifacts": list(rule["source_artifacts"]),
+            "tables": tables,
+        })
+    return {"schema_version": 3, "artifact_type": "completion_audit", "contract_version": 1, "output_profile": profile, "status": "complete", "modules": modules, "blocking_gaps": []}
+
+
 def valid_brief():
     return {
         "schema_version": 3,
@@ -42,7 +73,7 @@ def valid_brief():
         "mode_rationale": "当前没有指定标的公司，因此使用无标的行业研究模式。",
         "disproof_conditions": ["客户预算连续下降"],
         "must_cover_clusters": ["直接软件产品"],
-        "required_sections": ["供需与竞争"],
+        "required_sections": profile_module_ids(),
         "output_acceptance": ["关键判断可回连来源"],
     }
 
@@ -204,6 +235,7 @@ class SchemaTests(unittest.TestCase):
         brief["routing"]["industry_orientation"] = "hybrid"
         brief["routing"]["analysis_dimensions"] = ["consumer", "technology", "integration"]
         brief["routing"]["output_profile"] = "industry_hybrid"
+        brief["required_sections"] = profile_module_ids("industry_hybrid")
         brief["routing"]["orientation_rationale"] = "终端消费者、品牌和渠道决定需求，核心器件、工程能力和性能成本取舍同时影响购买、毛利和产品竞争。"
         self.assertEqual(bundle.validate_document(brief, "brief"), [])
         self.assertEqual(bundle.validate_brief_semantics(brief), [])
@@ -280,20 +312,29 @@ class SchemaTests(unittest.TestCase):
             industry_analysis = valid_industry_analysis()
             synthesis = valid_synthesis()
             narrative = valid_narrative()
+            completion = valid_completion_audit()
             output = root / "report.xlsx"
             output.write_bytes(b"test")
+            module_sheets = [f"模块{i + 1}" for i in range(len(completion["modules"]))]
             delivery = {
                 "schema_version": 3,
                 "artifact_type": "delivery_check",
                 "file_path": "report.xlsx",
                 "format": "Excel",
-                "sheets": ["摘要"],
-                "rendered_sheets": ["摘要"],
+                "sheets": ["摘要", *module_sheets],
+                "rendered_sheets": ["摘要", *module_sheets],
                 "clipped_text": [],
                 "missing_links": [],
                 "formula_errors": [],
                 "visual_repairs": [],
                 "visualizations": [],
+                "module_locations": [{
+                    "module_id": module["id"],
+                    "sheet": module_sheets[index],
+                    "range": "A1:H12",
+                    "content_type": "narrative_and_table" if module["tables"] else "narrative",
+                    "evidence_ids": ["E01"],
+                } for index, module in enumerate(completion["modules"])],
                 "passed": True,
             }
             names = {
@@ -303,6 +344,7 @@ class SchemaTests(unittest.TestCase):
                 "competition.json": competition,
                 "synthesis.json": synthesis,
                 "narrative.json": narrative,
+                "completion.json": completion,
                 "delivery.json": delivery,
             }
             for name, data in names.items():
@@ -316,8 +358,8 @@ class SchemaTests(unittest.TestCase):
                 "routing": copy.deepcopy(brief["routing"]),
                 "key_conclusions": [{"text": "需求增长仍需经过交付效率和客户验证。", "evidence_ids": ["E01"]}],
                 "coverage": {
-                    "required_sections": ["供需与竞争"],
-                    "completed_sections": ["供需与竞争"],
+                    "required_sections": profile_module_ids(),
+                    "completed_sections": profile_module_ids(),
                     "competition_clusters": ["直接软件产品"],
                     "source_counts_by_tier": {"A": 1, "B": 0, "C": 0, "D": 0},
                 },
@@ -329,6 +371,7 @@ class SchemaTests(unittest.TestCase):
                     "competition_map": "competition.json",
                     "analysis_synthesis": "synthesis.json",
                     "narrative_draft": "narrative.json",
+                    "completion_audit": "completion.json",
                     "delivery_check": "delivery.json",
                 },
                 "quality_checks": {
@@ -342,6 +385,7 @@ class SchemaTests(unittest.TestCase):
                     "editorial_used_synthesis_only": True,
                     "narrative_contract_passed": True,
                     "content_contract_passed": True,
+                    "module_completion_passed": True,
                     "artifact_reconciliation_passed": True,
                     "all_sheets_rendered": True,
                 },
@@ -352,6 +396,28 @@ class SchemaTests(unittest.TestCase):
             errors, warnings = bundle.validate_bundle(record_path)
             self.assertEqual(errors, [])
             self.assertEqual(warnings, [])
+
+            incomplete = copy.deepcopy(completion)
+            incomplete["modules"].pop()
+            (root / "completion.json").write_text(json.dumps(incomplete, ensure_ascii=False), encoding="utf-8")
+            errors, _ = bundle.validate_bundle(record_path)
+            self.assertTrue(any("completion_audit modules do not match profile" in item for item in errors))
+            (root / "completion.json").write_text(json.dumps(completion, ensure_ascii=False), encoding="utf-8")
+
+            missing_table = copy.deepcopy(completion)
+            table_module = next(item for item in missing_table["modules"] if item["tables"])
+            table_module["tables"] = []
+            (root / "completion.json").write_text(json.dumps(missing_table, ensure_ascii=False), encoding="utf-8")
+            errors, _ = bundle.validate_bundle(record_path)
+            self.assertTrue(any("requires a structured table" in item for item in errors))
+            (root / "completion.json").write_text(json.dumps(completion, ensure_ascii=False), encoding="utf-8")
+
+            missing_location = copy.deepcopy(delivery)
+            missing_location["module_locations"].pop()
+            (root / "delivery.json").write_text(json.dumps(missing_location, ensure_ascii=False), encoding="utf-8")
+            errors, _ = bundle.validate_bundle(record_path)
+            self.assertTrue(any("delivery module locations do not match profile" in item for item in errors))
+            (root / "delivery.json").write_text(json.dumps(delivery, ensure_ascii=False), encoding="utf-8")
 
             extra_claim = copy.deepcopy(ledger["claims"][0])
             extra_claim["id"] = "E02"

@@ -11,7 +11,8 @@ description: 仅在主 Skill `$team-industry-research` 编排，或用户明确�
 2. 检查来源、数字口径、事实与推演边界，以及直达链接完整性。
 3. 检查投资要点是否具有证据、失效条件和验证动作；检查竞品类别和非制造商角色覆盖；一级项目指标是否现实可得。硬科技工程瓶颈必须写清具体问题、形成原因、当前解决状态和投资影响，不能用关键词串替代分析。
 4. 检查阶段门禁和职责分离。行业交接包必须先于公司分析，公司任务必须形成公司交接包，综合判断必须处理冲突和失效条件，叙事稿不得引入综合判断之外的新证据，交付阶段不得新增研究内容。
-5. 聊天路径检查核心判断、直达链接、事实与推演边界以及待核验项。Excel 路径检查版式、可视化和可读性；市场数据图必须追溯到底层数据和直达链接。
-6. Excel 路径检查 `brief.json`、`evidence-ledger.json`、`industry-analysis.json`、适用时的 `company-analysis.json`、`competition-map.json`、`analysis-synthesis.json`、`narrative-draft.json`、`delivery-check.json` 是否齐备并使用 Schema v3；填写 `research-record.json`，运行 `scripts/validate_artifact_bundle.py --record <文件>`。聊天路径不要求建立上述文件。
+5. 根据 `references/output-profile-contracts.json` 建立 `completion-audit.json`。逐模块核对规定要素、分析正文、证据、上游阶段产物和必要表格。未披露事项保留在规定要素中并形成核验动作。任何模块不完整时，整体状态保持 `incomplete`。
+6. 聊天路径检查核心判断、直达链接、事实与推演边界以及待核验项。Excel 路径检查版式、可视化、可读性和 `module_locations`；市场数据图必须追溯到底层数据和直达链接。
+7. Excel 路径检查 `brief.json`、`evidence-ledger.json`、`industry-analysis.json`、适用时的 `company-analysis.json`、`competition-map.json`、`analysis-synthesis.json`、`narrative-draft.json`、`completion-audit.json`、`delivery-check.json` 是否齐备并使用 Schema v3；填写 `research-record.json`，运行 `scripts/validate_artifact_bundle.py --record <文件>`。聊天路径不要求建立上述文件。
 
-阻断或重大缺陷未修复时不得交付。聊天路径直接修订回复；Excel 路径输出修订清单、通过项和剩余限制条件。
+阻断或重大缺陷未修复时不得交付。模块缺失、规定要素未覆盖、必要明细表缺失、证据无法回连或模块未写入 Excel 均属于阻断缺陷。聊天路径直接修订回复；Excel 路径输出修订清单、通过项和剩余限制条件。

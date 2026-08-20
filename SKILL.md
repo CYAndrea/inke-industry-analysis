@@ -14,16 +14,19 @@ description: 完成中文行业研究、公司投资研究、竞品扫描和项�
 | 公司与竞争 | `subskills/team-research-competition/SKILL.md` | 公司结论交接包或行业竞争地图 | `company-analysis.json` 与 `competition-map.json` |
 | 综合判断 | `subskills/team-research-synthesis/SKILL.md` | 综合结论交接包 | `analysis-synthesis.json` |
 | 叙事编辑 | `subskills/team-research-editorial/SKILL.md` | 聊天正文 | `narrative-draft.json` |
+| 模块完成审计 | `subskills/team-research-quality/SKILL.md` | 按回复逐项核对 | `completion-audit.json` |
 | 交付制作 | `subskills/team-research-delivery/SKILL.md` | 最终回复 | Excel 文件与 `delivery-check.json` |
 | 质量验收 | `subskills/team-research-quality/SKILL.md` | 回复检查 | `research-record.json` 与对账结果 |
 
-按需读取并执行 `subskills/` 下的阶段模块。它们随主 Skill 一起安装，不要求用户额外安装并列目录。交付格式尚未确定时先完成格式确认并暂停。聊天与 Excel 都必须按“启动 → 行业证据与分析 → 公司与竞争 → 综合判断 → 叙事编辑 → 交付 → 质量验收”顺序执行。只有行业时，公司分析阶段标记为不适用，但竞争地图仍需完成。聊天路径使用内部交接包，不创建形式性文件；Excel 路径保存全部阶段产物。任务卡未通过校验时不开始正式检索，综合判断未通过门禁时不开始读者版写作，交付前运行 `scripts/validate_artifact_bundle.py --record <research-record.json>`，对账失败时不得交付。
+按需读取并执行 `subskills/` 下的阶段模块。它们随主 Skill 一起安装，不要求用户额外安装并列目录。交付格式尚未确定时先完成格式确认并暂停。聊天与 Excel 都必须按“启动 → 行业证据与分析 → 公司与竞争 → 综合判断 → 叙事编辑 → 模块完成审计 → 交付 → 质量验收”顺序执行。只有行业时，公司分析阶段标记为不适用，但竞争地图仍需完成。聊天路径使用内部交接包，不创建形式性文件；Excel 路径保存全部阶段产物。任务卡未通过校验时不开始正式检索，综合判断未通过门禁时不开始读者版写作。模块完成审计必须使用 `references/output-profile-contracts.json`，逐项形成分析、证据和必要表格；交付前运行 `scripts/validate_artifact_bundle.py --record <research-record.json>`，对账失败时不得交付。
 
 主 Skill 资源按需读取：`references/research-blueprint.md` 用于研究结构，`references/output-profiles.md` 用于输出路由，`references/evidence-and-company-research.md` 用于证据与公司信息路由，`references/consulting-narrative.md` 用于读者版叙事，`references/semantic-quality.md` 用于语义验收，`references/deliverable-specs.md` 用于聊天与 Excel 交付，`references/visualization-system.md` 用于 Excel 可视化，`references/quality-gates.md` 用于质量门禁。Excel 使用 `assets/excel-style.json` 与 `scripts/build_research_excel.mjs`，不得重新编写整套格式系统。
 
 ## 固定约束
 
-- 研究必须完整执行对应环节所有的流程，缺少任一核心模块时，研究记录不得标记为完成。
+- 研究必须完整执行对应环节所有的流程，缺少任一核心模块时，研究记录不得标记为完成。核心模块由 `references/output-profile-contracts.json` 按 `output_profile` 唯一确定，不允许用自拟章节名称替代。
+- “已完成”只能由模块完成审计和跨产物校验共同推出。不得依据 `quality_checks` 的人工布尔值、`completed_sections` 的自报列表或工作表已经生成来判断完成。
+- 每个模块必须同时满足：规定要素全部覆盖；存在可阅读分析；证据编号能够回连指定阶段产物；数据密集模块存在结构化表格；Excel 成品存在唯一可见位置。任何一项缺失均保持 `incomplete`。
 - 执行任务时，对能够独立开展的行业证据、公司信息、竞争格局和数据核验任务使用子智能体并行处理，以提高研究效率。任务卡、阶段门禁、综合判断、最终叙事与质量验收由主智能体统一编排，并行执行不得跳过规定流程或核心模块。
 - 事实、估算、推演与待核验事项分开表达。
 - 每个阶段只处理一种主要任务。检索阶段不写最终正文，行业阶段不提前评价标的公司，公司阶段不重新研究完整行业，综合阶段不补做大范围检索，叙事与交付阶段不得引入未经综合阶段纳入的新结论或新证据。
@@ -44,4 +47,4 @@ description: 完成中文行业研究、公司投资研究、竞品扫描和项�
 - 优先使用团队日常研究语言。消费品研究默认写“终端销售表现”“实际销售进度”“渠道出货与终端消化”“门店销售反馈”等具体表述，不将“动销”作为默认术语；仅在来源原文、客户访谈或数据口径明确使用“动销”时保留，并说明其定义与统计范围。
 - 聊天交付保留关键来源直达链接、判断边界和待核验事项；Excel 交付完成逐表渲染与视觉核验。
 - 团队经验仅在用户确认后写入日志。
-- Excel 路径缺少阶段必交产物时停留在当前阶段并补齐；聊天路径根据问题范围保留必要分析，不创建形式性文件。
+- Excel 路径缺少阶段必交产物或模块审计未通过时停留在当前阶段并补齐；聊天路径根据问题范围保留必要分析，不创建形式性文件。不得先生成简版 Excel 再把未写入的研究内容留在后台交接包中。
