@@ -20,7 +20,7 @@
   },
   "key_conclusions": [],
   "coverage": {"required_sections": [], "completed_sections": [], "competition_clusters": [], "source_counts_by_tier": {"A": 0, "B": 0, "C": 0, "D": 0}},
-  "stage_artifacts": {"brief": "", "evidence_ledger": "", "industry_analysis": "", "company_analysis": "", "competition_map": "", "analysis_synthesis": "", "narrative_draft": "", "delivery_check": ""},
-  "quality_checks": {"market_scope_separated": false, "investment_points_titled": false, "counterevidence_present": false, "primary_market_metrics_realistic": false, "industry_gate_passed": false, "company_gate_passed_or_not_applicable": false, "synthesis_gate_passed": false, "editorial_used_synthesis_only": false, "narrative_contract_passed": false, "content_contract_passed": false, "artifact_reconciliation_passed": false, "all_sheets_rendered": false},
+  "stage_artifacts": {"brief": "", "evidence_ledger": "", "industry_analysis": "", "company_analysis": "", "competition_map": "", "analysis_synthesis": "", "narrative_draft": "", "completion_audit": "", "delivery_check": ""},
+  "quality_checks": {"market_scope_separated": false, "investment_points_titled": false, "counterevidence_present": false, "primary_market_metrics_realistic": false, "industry_gate_passed": false, "company_gate_passed_or_not_applicable": false, "synthesis_gate_passed": false, "editorial_used_synthesis_only": false, "narrative_contract_passed": false, "content_contract_passed": false, "module_completion_passed": false, "artifact_reconciliation_passed": false, "all_sheets_rendered": false},
   "limitations": []
 }

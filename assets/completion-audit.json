@@ -1,0 +1,9 @@
+{
+  "schema_version": 3,
+  "artifact_type": "completion_audit",
+  "contract_version": 1,
+  "output_profile": "industry_technology",
+  "status": "incomplete",
+  "modules": [],
+  "blocking_gaps": ["按 references/output-profile-contracts.json 填写当前输出路径的全部模块"]
+}

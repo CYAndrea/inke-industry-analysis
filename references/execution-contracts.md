@@ -88,7 +88,7 @@
 
 ## 阶段状态机
 
-聊天与 Excel 统一使用 `intake → industry_analysis → company_and_competition → synthesis → editorial → delivery → quality`。只有行业时，`company_analysis` 标记为不适用，其他阶段不得跳过。聊天路径使用内部交接包，Excel 路径保存 Schema v3 阶段产物。
+聊天与 Excel 统一使用 `intake → industry_analysis → company_and_competition → synthesis → editorial → completion_audit → delivery → quality`。只有行业时，`company_analysis` 标记为不适用，其他阶段不得跳过。聊天路径使用内部交接包，Excel 路径保存 Schema v3 阶段产物。
 
 | 阶段 | 主要任务 | 允许读取 | 必须形成 | 进入下一阶段的门禁 |
 | --- | --- | --- | --- | --- |
@@ -97,7 +97,8 @@
 | `company_and_competition` | 公司分析与竞争定位 | 任务卡、行业交接包、按编号调用的证据 | 公司交接包与竞争地图 | 公司任务完成公司结论；行业任务明确不适用；竞争簇达到停止规则 |
 | `synthesis` | 交叉验证、冲突处理与决策判断 | 任务卡、行业交接包、公司交接包、竞争地图、按编号调用的证据 | 综合判断交接包 | 决策问题已回答；冲突已处理；失效条件完整；章节蓝图与证据编号完整 |
 | `editorial` | 读者版叙事 | 综合判断交接包、必要证据台账 | 叙事稿 | 未引入综合阶段之外的新结论或新证据；叙事与内容合同通过 |
-| `delivery` | 聊天或 Excel 制作 | 已通过门禁的叙事稿与交付规范 | 最终回复或工作簿 | 内容不扩写；Excel 已完成逐表渲染和链接检查 |
+| `completion_audit` | 按输出路径核对核心模块 | 全部阶段交接包、叙事稿、输出路径合同 | 模块完成审计 | 模块集合完全一致；规定要素、证据和必要表格齐备；阻断缺口为空 |
+| `delivery` | 聊天或 Excel 制作 | 已通过门禁的叙事稿、模块完成审计与交付规范 | 最终回复或工作簿 | 内容不扩写；Excel 的全部模块具有唯一可见位置，并完成逐表渲染和链接检查 |
 | `quality` | 跨阶段对账 | 全部阶段交接包和成品 | 研究记录 | 路由、证据、阶段依赖、文件路径和质量检查全部一致 |
 
 每个交接包只保留：关键结论、证据编号、反向证据、判断边界、未决问题、已完成章节和下一阶段重点。禁止复制来源全文、完整检索过程和大段原始笔记。后续阶段优先读取任务卡与上一阶段交接包；只有核对关键事实时，才按证据编号读取来源台账。
@@ -129,8 +130,8 @@
 
 ## Excel 验收合同
 
-无标的标准研究默认包含 `摘要与观点`、若干结论式正文页、`市场数据与来源`、`跟踪清单`。正文页名称直接表达章节判断。每张工作表首屏必须显示结论式标题和连续正文。
+无标的标准研究默认包含 `摘要与观点`、若干结论式正文页、当前输出路径的全部模块页、`市场数据与来源`、`跟踪清单`。正文页名称直接表达章节判断。每张工作表首屏必须显示结论式标题和连续正文。数据密集模块在模块页保留结构化明细表。
 
 正文使用横向合并、无内部边框的宽文本区，按段落从上到下连续阅读。技术路线、工程瓶颈、竞争判断和投资观点先以正文呈现；参数、公司和时间序列确有横向比较需要时才使用数据表。数据表最多八列，超过则分为多张表。正文数字紧邻论证，段落下方设置轻量数据依据；完整网址在来源台账中可见。输出前渲染所有工作表，并记录叙事阅读与视觉检查结果。
 
-`delivery-check.json` 固定包含 `schema_version`、`artifact_type`、`file_path`、`format`、`sheets`、`rendered_sheets`、`clipped_text`、`missing_links`、`formula_errors`、`visual_repairs`、`visualizations`、`passed`。每个图表记录工作表、证据编号、底层数据范围、来源链接、验收状态和限制条件。
+`delivery-check.json` 固定包含 `schema_version`、`artifact_type`、`file_path`、`format`、`sheets`、`rendered_sheets`、`clipped_text`、`missing_links`、`formula_errors`、`visual_repairs`、`visualizations`、`module_locations`、`passed`。每个图表记录工作表、证据编号、底层数据范围、来源链接、验收状态和限制条件。每个核心模块记录唯一工作表、可见范围、内容类型和证据编号。
