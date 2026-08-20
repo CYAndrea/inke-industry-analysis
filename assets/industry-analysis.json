@@ -1,0 +1,15 @@
+{
+  "schema_version": 3,
+  "artifact_type": "industry_analysis",
+  "central_question": "",
+  "findings": [],
+  "counterevidence": [],
+  "handoff": {
+    "summary": "",
+    "key_evidence_ids": [],
+    "unresolved_questions": [],
+    "completed_sections": [],
+    "next_stage_focus": []
+  },
+  "limitations": []
+}

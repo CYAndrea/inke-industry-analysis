@@ -1,0 +1,19 @@
+{
+  "schema_version": 3,
+  "artifact_type": "analysis_synthesis",
+  "central_thesis": "",
+  "decision_answer": "",
+  "industry_conclusions": [],
+  "company_conclusions": [],
+  "conflicts": [],
+  "counterevidence": [],
+  "disproof_conditions": [],
+  "section_blueprint": [],
+  "handoff": {
+    "summary": "",
+    "key_evidence_ids": [],
+    "unresolved_questions": [],
+    "completed_sections": [],
+    "next_stage_focus": []
+  }
+}

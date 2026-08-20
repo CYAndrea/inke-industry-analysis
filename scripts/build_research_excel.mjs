@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 import { createRequire } from 'node:module';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 function arg(name) {
   const index = process.argv.indexOf(name);
@@ -14,6 +14,7 @@ const configPath = arg('--config');
 if (!configPath) throw new Error('Usage: build_research_excel.mjs --config <config.json>');
 const config = JSON.parse(await fs.readFile(configPath, 'utf8'));
 const configDir = path.dirname(path.resolve(configPath));
+const skillRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const resolvePath = value => path.isAbsolute(value) ? value : path.resolve(configDir, value);
 const moduleCandidates = [config.node_modules_path, process.env.CODEX_WORKSPACE_NODE_MODULES, path.join(process.cwd(), 'node_modules')].filter(Boolean);
 const require = createRequire(import.meta.url);
@@ -26,7 +27,8 @@ try {
 const { Workbook, SpreadsheetFile } = await import(pathToFileURL(artifactEntry).href);
 const narrative = JSON.parse(await fs.readFile(resolvePath(config.narrative_path), 'utf8'));
 const ledger = JSON.parse(await fs.readFile(resolvePath(config.evidence_ledger_path), 'utf8'));
-const style = JSON.parse(await fs.readFile(resolvePath(config.style_path), 'utf8'));
+const stylePath = config.style_path ? resolvePath(config.style_path) : path.join(skillRoot, 'assets', 'excel-style.json');
+const style = JSON.parse(await fs.readFile(stylePath, 'utf8'));
 const outputPath = resolvePath(config.output_path);
 const renderDir = resolvePath(config.render_dir);
 const deliveryPath = resolvePath(config.delivery_check_path);

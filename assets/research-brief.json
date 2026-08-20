@@ -7,11 +7,16 @@
   "routing": {
     "research_mode": "industry_overview",
     "capital_market_stage": "not_applicable",
-    "research_archetype": "其他",
-    "technology_materiality": "非核心",
+    "research_subject": "industry",
+    "industry_orientation": "technology",
+    "analysis_dimensions": ["technology"],
+    "listing_status": "not_applicable",
+    "listing_exchange": "",
+    "ticker": "",
     "company_maturity": "不适用",
     "information_availability": "稀疏",
-    "output_profile": "industry_consumer"
+    "output_profile": "industry_technology",
+    "orientation_rationale": ""
   },
   "scope": {"geography": ["中国"], "as_of": "", "segments": []},
   "decision_question": "",

@@ -1,0 +1,16 @@
+{
+  "schema_version": 3,
+  "artifact_type": "company_analysis",
+  "target_company": "",
+  "relationship_to_industry": "",
+  "findings": [],
+  "counterevidence": [],
+  "handoff": {
+    "summary": "",
+    "key_evidence_ids": [],
+    "unresolved_questions": [],
+    "completed_sections": [],
+    "next_stage_focus": []
+  },
+  "limitations": []
+}
