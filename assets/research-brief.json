@@ -1,0 +1,29 @@
+{
+  "schema_version": 3,
+  "artifact_type": "brief",
+  "industry_theme": "",
+  "target_company": "",
+  "deliverable": "Excel",
+  "routing": {
+    "research_mode": "industry_overview",
+    "capital_market_stage": "not_applicable",
+    "research_subject": "industry",
+    "industry_orientation": "technology",
+    "analysis_dimensions": ["technology"],
+    "listing_status": "not_applicable",
+    "listing_exchange": "",
+    "ticker": "",
+    "company_maturity": "不适用",
+    "information_availability": "稀疏",
+    "output_profile": "industry_technology",
+    "orientation_rationale": ""
+  },
+  "scope": {"geography": ["中国"], "as_of": "", "segments": []},
+  "decision_question": "",
+  "core_hypothesis": "",
+  "mode_rationale": "",
+  "disproof_conditions": [],
+  "must_cover_clusters": [],
+  "required_sections": [],
+  "output_acceptance": []
+}

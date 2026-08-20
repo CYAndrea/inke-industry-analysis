@@ -1,0 +1,4 @@
+interface:
+  display_name: "团队行业研究"
+  short_description: "以聊天或 Excel 完成中文行业研究与项目筛选"
+  default_prompt: "使用 $team-industry-research 完成研究；请先确认我希望以聊天格式还是 Excel 格式输出。"
