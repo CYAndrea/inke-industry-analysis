@@ -311,6 +311,12 @@ def validate_completion_audit(audit, profile, docs, delivery):
                 errors.append(f"completion_audit.{module_id}.tables[{index}] evidence must be included in module evidence_ids")
 
     locations = delivery.get("module_locations", [])
+    sheets = delivery.get("sheets", [])
+    if len(sheets) > 8:
+        errors.append(f"Excel reader workbook must contain at most eight visible sheets; found={len(sheets)}")
+    mechanical_module_sheets = [name for name in sheets if str(name).startswith("模块-")]
+    if mechanical_module_sheets:
+        errors.append(f"Excel reader workbook must merge audit modules into reader pages; mechanical sheets={mechanical_module_sheets}")
     location_ids = [item.get("module_id") for item in locations]
     location_counts = Counter(location_ids)
     if set(location_ids) != set(profile_modules):
@@ -327,6 +333,27 @@ def validate_completion_audit(audit, profile, docs, delivery):
         module = module_by_id.get(module_id, {})
         if not set(location.get("evidence_ids", [])).issubset(set(module.get("evidence_ids", []))):
             errors.append(f"delivery module {module_id} evidence must come from completion_audit")
+
+    narrative = docs.get("narrative_draft", {})
+    narrative_sections = narrative.get("sections", [])
+    narrative_by_id = {item.get("id"): item for item in narrative_sections}
+    narrative_locations = delivery.get("narrative_locations", [])
+    narrative_location_ids = [item.get("section_id") for item in narrative_locations]
+    narrative_location_counts = Counter(narrative_location_ids)
+    if set(narrative_location_ids) != set(narrative_by_id):
+        missing = sorted(set(narrative_by_id) - set(narrative_location_ids))
+        extra = sorted(set(narrative_location_ids) - set(narrative_by_id))
+        errors.append(f"delivery narrative locations do not match narrative draft; missing={missing}, extra={extra}")
+    repeated_narratives = sorted(key for key, count in narrative_location_counts.items() if count != 1)
+    if repeated_narratives:
+        errors.append(f"delivery narrative locations must contain one visible location per section: {repeated_narratives}")
+    for location in narrative_locations:
+        section_id = location.get("section_id")
+        if location.get("sheet") not in sheets:
+            errors.append(f"delivery narrative section {section_id} refers to an unknown sheet")
+        section = narrative_by_id.get(section_id, {})
+        if set(location.get("evidence_ids", [])) != set(section.get("evidence_ids", [])):
+            errors.append(f"delivery narrative section {section_id} must preserve all evidence ids from narrative_draft")
     return errors
 
 

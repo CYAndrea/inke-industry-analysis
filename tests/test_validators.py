@@ -315,14 +315,14 @@ class SchemaTests(unittest.TestCase):
             completion = valid_completion_audit()
             output = root / "report.xlsx"
             output.write_bytes(b"test")
-            module_sheets = [f"模块{i + 1}" for i in range(len(completion["modules"]))]
+            reader_sheets = ["摘要与投资判断", "行业研究正文", "来源与待核验事项"]
             delivery = {
                 "schema_version": 3,
                 "artifact_type": "delivery_check",
                 "file_path": "report.xlsx",
                 "format": "Excel",
-                "sheets": ["摘要", *module_sheets],
-                "rendered_sheets": ["摘要", *module_sheets],
+                "sheets": reader_sheets,
+                "rendered_sheets": reader_sheets,
                 "clipped_text": [],
                 "missing_links": [],
                 "formula_errors": [],
@@ -330,11 +330,17 @@ class SchemaTests(unittest.TestCase):
                 "visualizations": [],
                 "module_locations": [{
                     "module_id": module["id"],
-                    "sheet": module_sheets[index],
+                    "sheet": "行业研究正文",
                     "range": "A1:H12",
                     "content_type": "narrative_and_table" if module["tables"] else "narrative",
                     "evidence_ids": ["E01"],
                 } for index, module in enumerate(completion["modules"])],
+                "narrative_locations": [{
+                    "section_id": "S01",
+                    "sheet": "行业研究正文",
+                    "range": "A13:H20",
+                    "evidence_ids": ["E01"],
+                }],
                 "passed": True,
             }
             names = {
@@ -417,6 +423,13 @@ class SchemaTests(unittest.TestCase):
             (root / "delivery.json").write_text(json.dumps(missing_location, ensure_ascii=False), encoding="utf-8")
             errors, _ = bundle.validate_bundle(record_path)
             self.assertTrue(any("delivery module locations do not match profile" in item for item in errors))
+            (root / "delivery.json").write_text(json.dumps(delivery, ensure_ascii=False), encoding="utf-8")
+
+            missing_narrative = copy.deepcopy(delivery)
+            missing_narrative["narrative_locations"][0]["section_id"] = "S02"
+            (root / "delivery.json").write_text(json.dumps(missing_narrative, ensure_ascii=False), encoding="utf-8")
+            errors, _ = bundle.validate_bundle(record_path)
+            self.assertTrue(any("delivery narrative locations do not match narrative draft" in item for item in errors))
             (root / "delivery.json").write_text(json.dumps(delivery, ensure_ascii=False), encoding="utf-8")
 
             extra_claim = copy.deepcopy(ledger["claims"][0])

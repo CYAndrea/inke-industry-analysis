@@ -27,7 +27,7 @@ const narrative = {
   central_thesis: '该测试报告用于验证完成合同中的全部核心模块都会出现在最终工作簿中，并形成能够被校验器定位的唯一可见页面。',
   argument_sequence: ['行业基础', '投资判断'],
   investment_points: [],
-  sections: [{id: 'S01', title: '完成合同阻止后台成果在交付时丢失', paragraphs: ['完成合同把输出路径中的核心模块转换为机器可读清单，使行业、公司、竞争、财务和估值等研究成果能够在生成前逐项核对。每个模块需要保留规定要素、完整分析、证据编号和必要的结构化表格。', 'Excel 生成器直接读取已经通过审计的模块内容，并为每个模块建立独立页面和可见位置记录。任何模块缺失、必要表格缺失或可见位置缺失都会让跨产物校验失败。'], argument_chain: {conclusion: '核心模块必须全部进入成品', mechanism: '完成审计连接研究产物与Excel生成器', evidence: '集成测试验证生成结果', investment_implication: '避免简版交付掩盖后台完整研究', boundary: '测试不评价实际行业结论'}, evidence_ids: ['E01'], table_justification: '', visualizations: []}],
+  sections: [{id: 'S01', title: '完成合同阻止后台成果在交付时丢失', paragraphs: ['完成合同把输出路径中的核心模块转换为机器可读清单，使行业、公司、竞争、财务和估值等研究成果能够在生成前逐项核对。每个模块需要保留规定要素、完整分析、证据编号和必要的结构化表格。', 'Excel 生成器直接读取已经通过审计的模块内容，把完整叙事与模块分析合并到最多八个读者页面，并为每项内容建立唯一位置记录。任何章节、模块、必要表格或可见位置缺失都会让跨产物校验失败。'], argument_chain: {conclusion: '核心模块必须全部进入成品', mechanism: '完成审计连接研究产物与Excel生成器', evidence: '集成测试验证生成结果', investment_implication: '避免简版交付掩盖后台完整研究', boundary: '测试不评价实际行业结论'}, evidence_ids: ['E01'], table_justification: '', visualizations: []}],
   tracking_items: [],
   editorial_checks: {scaffolding_hidden: true, paragraphs_connected: true, tables_only_when_necessary: true, reader_can_follow_top_to_bottom: true}
 };
@@ -81,6 +81,10 @@ if (result.status !== 0) throw new Error(result.stdout + result.stderr);
 const delivery = JSON.parse(await fs.readFile(config.delivery_check_path, 'utf8'));
 if (delivery.module_locations.length !== modules.length) throw new Error('Not every completion module received a visible Excel location.');
 if (!delivery.module_locations.every(item => delivery.sheets.includes(item.sheet) && delivery.rendered_sheets.includes(item.sheet))) throw new Error('A module location is missing from the sheet or render list.');
+if (delivery.narrative_locations.length !== narrative.sections.length) throw new Error('Not every narrative section received a visible Excel location.');
+if (!delivery.narrative_locations.every(item => delivery.sheets.includes(item.sheet) && delivery.rendered_sheets.includes(item.sheet))) throw new Error('A narrative location is missing from the sheet or render list.');
+if (delivery.sheets.length > 8) throw new Error('Reader workbook exceeds eight sheets.');
+if (delivery.sheets.some(name => name.startsWith('模块-'))) throw new Error('Reader workbook contains mechanical module sheets.');
 const stat = await fs.stat(config.output_path);
 if (stat.size < 1000) throw new Error('Generated workbook is unexpectedly small.');
 console.log(JSON.stringify({status: 'PASS', workbook: config.output_path, module_count: modules.length, sheet_count: delivery.sheets.length, rendered_count: delivery.rendered_sheets.length}, null, 2));
