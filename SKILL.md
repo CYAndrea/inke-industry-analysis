@@ -21,7 +21,7 @@ description: 完成中文行业研究、公司投资研究、竞品扫描和项�
 
 按需读取并执行 `subskills/` 下的阶段模块。它们随主 Skill 一起安装，不要求用户额外安装并列目录。交付格式尚未确定时先完成格式确认并暂停。聊天与 Excel 都必须按“启动 → 行业证据与分析 → 公司分析与竞争格局并行 → 综合判断 → 叙事编辑 → 模块完成审计 → 交付 → 质量验收”执行。只有行业时，公司分析阶段标记为不适用，但竞争地图仍需完成。公司分析与竞争格局均以行业交接包为输入，二者完成后才能进入综合判断。聊天路径使用内部交接包，不创建形式性文件；Excel 路径保存全部阶段产物。任务卡未通过校验时不开始正式检索，综合判断未通过门禁时不开始读者版写作。模块完成审计必须使用 `references/output-profile-contracts.json`，逐项核对分析、证据和必要表格；交付前运行 `scripts/validate_artifact_bundle.py --record <research-record.json>`，对账失败时不得交付。
 
-主 Skill 资源按需读取：`references/research-blueprint.md` 用于研究结构，`references/output-profiles.md` 用于输出路由，`references/evidence-and-company-research.md` 用于证据与公司信息路由，`references/consulting-narrative.md` 用于读者版叙事，`references/semantic-quality.md` 用于语义验收，`references/deliverable-specs.md` 用于聊天与 Excel 交付，`references/visualization-system.md` 用于 Excel 可视化，`references/quality-gates.md` 用于质量门禁。Excel 使用 `assets/excel-style.json` 与 `scripts/build_research_excel.mjs`，不得重新编写整套格式系统。
+主 Skill 资源按需读取：`references/research-blueprint.md` 用于研究结构，`references/output-profiles.md` 用于输出路由，`references/evidence-and-company-research.md` 用于证据与公司信息路由，`references/consulting-narrative.md` 用于读者版叙事，`references/semantic-quality.md` 用于语义验收，`references/deliverable-specs.md` 用于聊天与 Excel 交付，`references/visualization-system.md` 用于聊天与 Excel 可视化，`references/quality-gates.md` 用于质量门禁。Excel 使用 `assets/excel-style.json` 与 `scripts/build_research_excel.mjs`，不得重新编写整套格式系统。
 
 ## 固定约束
 
@@ -44,6 +44,8 @@ description: 完成中文行业研究、公司投资研究、竞品扫描和项�
 - 关键数字与结论保留完整直达链接。
 - 聊天路径在结论附近提供直达来源链接；Excel 路径的正文、投资要点、竞品和图表仅通过 `evidence_ids` 引用 `evidence-ledger.json`，`research-record.json` 不复制来源台账。
 - 每个关键市场趋势、技术结构、产业链关系、竞争定位或商业闭环至少评估一次可视化价值。精确数据使用可追溯的原生图表；技术与硬件关系使用经过术语和连接校验的示意图；真实产品优先官方素材；外部报告图用于口径发现和重绘参考。
+- 聊天格式的完整研究报告必须直接生成并内嵌产业链图、竞争格局图和关键数据趋势图各至少一项。每项选择对当前研究判断最有价值的关系或指标。Markdown 表格、文字描述和作图建议不能替代上述三项可视化。
+- 聊天可视化必须与正文结论相邻，标明数据口径、时间范围、证据来源、事实边界和必要限制。缺少可核验数据或运行环境不具备作图能力时记录阻断缺口，不得伪造图表或把报告标记为完整可视化报告。
 - 图片生成模型不得生成需要精确核验的市场数字、坐标、参数和复杂中文标签。生成式图片只承担结构、场景和物理形态表达，精确文字与数字在交付工具中叠加。
 - 优先使用团队日常研究语言。消费品研究默认写“终端销售表现”“实际销售进度”“渠道出货与终端消化”“门店销售反馈”等具体表述，不将“动销”作为默认术语；仅在来源原文、客户访谈或数据口径明确使用“动销”时保留，并说明其定义与统计范围。
 - 聊天交付保留关键来源直达链接、判断边界和待核验事项；Excel 交付完成逐表渲染与视觉核验。
