@@ -579,5 +579,20 @@ class DeliveryRoutingTests(unittest.TestCase):
         self.assertIn("用户已经明确格式时不得重复询问", text)
 
 
+class DistributionDocsTests(unittest.TestCase):
+    def test_readme_covers_agent_installation(self):
+        text = (ROOT / "README.md").read_text(encoding="utf-8-sig")
+        for required in (
+            "### Codex",
+            "### Claude Code",
+            "### Kimi Work",
+            "--repo CYAndrea/inke-industry-analysis --path .",
+            "~/.claude/skills/team-industry-research",
+            "assets/excel-reader-pages.json",
+            "Cannot resolve @oai/artifact-tool",
+        ):
+            self.assertIn(required, text)
+
+
 if __name__ == "__main__":
     unittest.main()
