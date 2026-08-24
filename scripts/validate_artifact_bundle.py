@@ -13,6 +13,10 @@ SCHEMA_PATH = ROOT / "references" / "research-artifact-schema.json"
 SCHEMA = json.loads(SCHEMA_PATH.read_text(encoding="utf-8-sig"))
 PROFILE_CONTRACT_PATH = ROOT / "references" / "output-profile-contracts.json"
 PROFILE_CONTRACT = json.loads(PROFILE_CONTRACT_PATH.read_text(encoding="utf-8-sig"))
+READER_PAGE_LAYOUT_PATH = ROOT / "assets" / "excel-reader-pages.json"
+READER_PAGE_LAYOUT = json.loads(READER_PAGE_LAYOUT_PATH.read_text(encoding="utf-8-sig"))
+READER_PAGE_TITLES = {page["id"]: page["title"] for page in READER_PAGE_LAYOUT["pages"]}
+MODULE_PAGE_IDS = {module_id: page["id"] for page in READER_PAGE_LAYOUT["pages"] for module_id in page.get("module_ids", [])}
 
 
 def load(path):
@@ -231,15 +235,41 @@ def validate_synthesis_sources(synthesis, industry, company=None):
         synthesis_company_refs = set(evidence_refs(synthesis.get("company_conclusions", [])))
         if not synthesis_company_refs.issubset(company_refs):
             errors.append("analysis_synthesis company conclusions must come from company_analysis")
+    covered_modules = [module_id for section in synthesis.get("section_blueprint", []) for module_id in section.get("covered_module_ids", [])]
+    duplicate_modules = sorted(key for key, count in Counter(covered_modules).items() if count > 1)
+    if duplicate_modules:
+        errors.append(f"analysis_synthesis section_blueprint assigns modules more than once: {duplicate_modules}")
+    for index, section in enumerate(synthesis.get("section_blueprint", []), 1):
+        page_id = section.get("reader_page_id")
+        for module_id in section.get("covered_module_ids", []):
+            if module_id not in MODULE_PAGE_IDS:
+                errors.append(f"analysis_synthesis section {index} covers unknown module {module_id}")
+            elif MODULE_PAGE_IDS[module_id] != page_id:
+                errors.append(f"analysis_synthesis section {index} places module {module_id} on the wrong reader page")
     return errors
 
 
 def validate_narrative_source(narrative, synthesis):
+    errors = []
     narrative_refs = set(evidence_refs(narrative))
     synthesis_refs = set(evidence_refs(synthesis))
     if not narrative_refs.issubset(synthesis_refs):
-        return ["narrative_draft introduces evidence not approved by analysis_synthesis"]
-    return []
+        errors.append("narrative_draft introduces evidence not approved by analysis_synthesis")
+    blueprint = synthesis.get("section_blueprint", [])
+    sections = narrative.get("sections", [])
+    if len(blueprint) != len(sections):
+        errors.append("narrative_draft sections must exactly match analysis_synthesis.section_blueprint")
+        return errors
+    for index, (planned, written) in enumerate(zip(blueprint, sections), 1):
+        if written.get("title") != planned.get("title"):
+            errors.append(f"narrative section {index} must preserve the blueprint title")
+        if written.get("reader_page_id") != planned.get("reader_page_id"):
+            errors.append(f"narrative section {index} must preserve reader_page_id from the blueprint")
+        if written.get("covered_module_ids") != planned.get("covered_module_ids"):
+            errors.append(f"narrative section {index} must preserve covered_module_ids from the blueprint")
+        if set(written.get("evidence_ids", [])) != set(planned.get("evidence_ids", [])):
+            errors.append(f"narrative section {index} must preserve evidence_ids from the blueprint")
+    return errors
 
 
 def artifact_evidence_ids(name, document):
@@ -271,6 +301,19 @@ def validate_completion_audit(audit, profile, docs, delivery):
         errors.append("completion_audit.blocking_gaps must be empty")
 
     module_by_id = {item.get("id"): item for item in modules}
+    narrative = docs.get("narrative_draft", {})
+    narrative_coverage = [module_id for section in narrative.get("sections", []) for module_id in section.get("covered_module_ids", [])]
+    narrative_exempt = {"investment_points", "industry_outlook", "sources_limitations"}
+    expected_narrative_modules = set(profile_modules) - narrative_exempt
+    unknown_coverage = sorted(set(narrative_coverage) - set(profile_modules))
+    missing_coverage = sorted(expected_narrative_modules - set(narrative_coverage))
+    duplicate_coverage = sorted(key for key, count in Counter(narrative_coverage).items() if count > 1)
+    if unknown_coverage:
+        errors.append(f"narrative covers modules outside the output profile: {unknown_coverage}")
+    if missing_coverage:
+        errors.append(f"narrative does not cover required modules: {missing_coverage}")
+    if duplicate_coverage:
+        errors.append(f"narrative covers modules more than once: {duplicate_coverage}")
     for module_id in profile_modules:
         module = module_by_id.get(module_id)
         if not module:
@@ -352,6 +395,9 @@ def validate_completion_audit(audit, profile, docs, delivery):
         if location.get("sheet") not in sheets:
             errors.append(f"delivery narrative section {section_id} refers to an unknown sheet")
         section = narrative_by_id.get(section_id, {})
+        expected_sheet = READER_PAGE_TITLES.get(section.get("reader_page_id"))
+        if expected_sheet and location.get("sheet") != expected_sheet:
+            errors.append(f"delivery narrative section {section_id} is not written to its assigned reader page")
         if set(location.get("evidence_ids", [])) != set(section.get("evidence_ids", [])):
             errors.append(f"delivery narrative section {section_id} must preserve all evidence ids from narrative_draft")
     return errors

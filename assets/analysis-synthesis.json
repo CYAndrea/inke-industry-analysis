@@ -8,7 +8,15 @@
   "conflicts": [],
   "counterevidence": [],
   "disproof_conditions": [],
-  "section_blueprint": [],
+  "section_blueprint": [
+    {
+      "title": "",
+      "purpose": "",
+      "reader_page_id": "industry",
+      "covered_module_ids": [],
+      "evidence_ids": []
+    }
+  ],
   "handoff": {
     "summary": "",
     "key_evidence_ids": [],

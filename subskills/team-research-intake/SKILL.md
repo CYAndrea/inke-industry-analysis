@@ -1,6 +1,6 @@
 ---
 name: team-research-intake
-description: 仅在主 Skill `$team-industry-research` 编排，或用户明确调用 `$team-research-intake` 时使用。为行业研究建立并校验任务卡、研究边界、核心判断、反证条件和少量必要追问；不负责检索、公司分析或交付制作。
+description: 仅在主 Skill `$team-industry-research` 编排，或用户明确调用 `$team-research-intake` 时使用。为行业研究建立并校验任务卡、研究边界、可证伪初始假设、反证条件和少量必要追问；不负责检索、公司分析或交付制作。
 ---
 
 # 团队研究启动
@@ -13,8 +13,8 @@ description: 仅在主 Skill `$team-industry-research` 编排，或用户明确�
 4. 按产业链位置、主要客户、销售对象、利润来源和购买决策判断 `industry_orientation`。终端消费者、品牌和渠道主导时选择 `consumer`，并填写 `analysis_dimensions=[consumer]`；产业客户和工程指标主导时选择 `technology`，并填写 `[technology]`；消费需求、品牌渠道与技术路线、核心器件、工程能力同时直接影响购买、毛利和竞争壁垒时选择 `hybrid`，并填写 `[consumer, technology, integration]`。融合方向的判断理由必须分别说明消费驱动、科技驱动及二者的商业连接。
 5. 根据研究对象、资本市场阶段和行业方向生成九个固定 `output_profile` 之一，再填写公司成熟度、信息完整度、必需章节和验收条件。
 6. 只追问会改变结果的缺口，最多三项；用户已提供的信息不得重复询问。
-7. 写出可被证据推翻的核心判断与反证条件，并从输出配置写入必覆盖竞争簇、必需章节和交付验收项。
+7. 写出可被证据推翻的初始假设与反证条件，并从输出配置写入必覆盖竞争簇、必需章节和交付验收项。初始假设只用于规划检索，不得作为最终结论，也不得限制后续反向证据。
 8. 科技方向把技术路线与工程瓶颈列为必需章节；消费方向将技术内容限制在产品体验、成本、质量、供应链和合规直接相关的范围；融合方向同时纳入消费与科技必需章节，并增加技术向消费者价值、定价能力、毛利和品牌差异转化的分析。
 9. 聊天路径在内部形成精简任务卡并继续研究，不要求保存 JSON。Excel 路径按主 Skill 的 Schema 写入 `schema_version=3` 与 `artifact_type=brief`，运行 `scripts/validate_artifact_bundle.py --brief <文件>`。
 
-聊天路径输出研究边界、核心判断和必要待确认项。Excel 路径输出 `brief.json` 路径；未通过校验时不得开始正式检索。
+聊天路径输出研究边界、初始假设和必要待确认项。Excel 路径输出 `brief.json` 路径；未通过校验时不得开始正式检索。

@@ -12,6 +12,7 @@ if data.get("schema_version") != 3 or data.get("artifact_type") != "narrative_dr
 if not isinstance(data.get("central_thesis"), str) or len(data["central_thesis"].strip()) < 30:
     errors.append("central_thesis is missing or too short")
 sections = data.get("sections")
+allowed_pages = {"industry", "product", "competition", "company", "financials", "decision"}
 if not isinstance(sections, list) or not sections:
     errors.append("sections must be non-empty")
 else:
@@ -22,6 +23,13 @@ else:
             errors.append(f"section[{idx}].title must express a full assertion")
         if title in banned_titles:
             errors.append(f"section[{idx}].title exposes analysis scaffolding")
+        if section.get("reader_page_id") not in allowed_pages:
+            errors.append(f"section[{idx}].reader_page_id is invalid")
+        covered_modules = section.get("covered_module_ids")
+        if not isinstance(covered_modules, list) or not covered_modules:
+            errors.append(f"section[{idx}].covered_module_ids must be non-empty")
+        elif len(covered_modules) != len(set(covered_modules)):
+            errors.append(f"section[{idx}].covered_module_ids must be unique")
         paragraphs = section.get("paragraphs")
         if not isinstance(paragraphs, list) or len(paragraphs) < 2:
             errors.append(f"section[{idx}] needs at least two connected paragraphs")
