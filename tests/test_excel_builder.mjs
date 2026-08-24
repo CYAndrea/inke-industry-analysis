@@ -13,6 +13,7 @@ if (!nodeModules) throw new Error('Pass --node-modules with the bundled workspac
 
 const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'industry-skill-excel-'));
 const contract = JSON.parse(await fs.readFile(path.join(root, 'references', 'output-profile-contracts.json'), 'utf8'));
+const readerLayout = JSON.parse(await fs.readFile(path.join(root, 'assets', 'excel-reader-pages.json'), 'utf8'));
 const profile = 'industry_technology';
 const ledger = {
   schema_version: 3,
@@ -21,13 +22,30 @@ const ledger = {
   claims: [{id: 'E01', claim: '测试证据用于验证模块内容能够完整写入工作簿。', evidence_type: 'fact', tier: 'A', source_name: '测试来源', source_title: '测试公告', published_at: '2026-08-20', url: 'https://example.com/source', geography: '中国', period: '2026', unit: '不适用', scope: '集成测试', calculation: '原始披露', usage: '验证生成器', limitations: '仅用于测试', source_role: '原始披露', independence: '独立来源'}],
   limitations: []
 };
+const profileModules = new Set(contract.profiles[profile]);
+const paragraphOne = '完成合同把输出路径中的核心模块转换为机器可读清单，使行业、公司、竞争、财务和估值等研究成果能够在生成前逐项核对。每个模块需要保留规定要素、完整分析、证据编号和必要的结构化表格。';
+const paragraphTwo = 'Excel 生成器直接读取已经通过审计的模块内容，把完整叙事与必要表格合并到最多八个读者页面，并为每项内容建立唯一位置记录。任何章节、模块、必要表格或可见位置缺失都会让跨产物校验失败。';
+const narrativeSections = readerLayout.pages.filter(page => !['summary', 'sources'].includes(page.kind)).map(page => ({
+  page,
+  covered: page.module_ids.filter(id => profileModules.has(id))
+})).filter(item => item.covered.length).map((item, index) => ({
+  id: `S${String(index + 1).padStart(2, '0')}`,
+  title: `${item.page.title}需要经过完整性门禁`,
+  reader_page_id: item.page.id,
+  covered_module_ids: item.covered,
+  paragraphs: [paragraphOne, paragraphTwo],
+  argument_chain: {conclusion: '核心模块必须全部进入成品', mechanism: '完成审计连接研究产物与Excel生成器', evidence: '集成测试验证生成结果', investment_implication: '避免简版交付掩盖后台完整研究', boundary: '测试不评价实际行业结论'},
+  evidence_ids: ['E01'],
+  table_justification: '',
+  visualizations: []
+}));
 const narrative = {
   schema_version: 3,
   artifact_type: 'narrative_draft',
   central_thesis: '该测试报告用于验证完成合同中的全部核心模块都会出现在最终工作簿中，并形成能够被校验器定位的唯一可见页面。',
-  argument_sequence: ['行业基础', '投资判断'],
+  argument_sequence: narrativeSections.map(section => section.title),
   investment_points: [],
-  sections: [{id: 'S01', title: '完成合同阻止后台成果在交付时丢失', paragraphs: ['完成合同把输出路径中的核心模块转换为机器可读清单，使行业、公司、竞争、财务和估值等研究成果能够在生成前逐项核对。每个模块需要保留规定要素、完整分析、证据编号和必要的结构化表格。', 'Excel 生成器直接读取已经通过审计的模块内容，把完整叙事与模块分析合并到最多八个读者页面，并为每项内容建立唯一位置记录。任何章节、模块、必要表格或可见位置缺失都会让跨产物校验失败。'], argument_chain: {conclusion: '核心模块必须全部进入成品', mechanism: '完成审计连接研究产物与Excel生成器', evidence: '集成测试验证生成结果', investment_implication: '避免简版交付掩盖后台完整研究', boundary: '测试不评价实际行业结论'}, evidence_ids: ['E01'], table_justification: '', visualizations: []}],
+  sections: narrativeSections,
   tracking_items: [],
   editorial_checks: {scaffolding_hidden: true, paragraphs_connected: true, tables_only_when_necessary: true, reader_can_follow_top_to_bottom: true}
 };

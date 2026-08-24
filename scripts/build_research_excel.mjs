@@ -98,17 +98,16 @@ if (readerPages.length > readerPageLayout.max_reader_pages) throw new Error(`Rea
 const narrativeContentPages = readerPages.filter(page => page.kind !== 'summary' && page.kind !== 'sources');
 if (narrative.sections?.length && !narrativeContentPages.length) throw new Error('Narrative sections have no eligible reader page.');
 const narrativeAssignments = new Map(narrativeContentPages.map(page => [page.id, []]));
-const pageEvidence = new Map(narrativeContentPages.map(page => [page.id, new Set(page.modules.flatMap(module => module.evidence_ids || []))]));
-for (const [index, section] of (narrative.sections || []).entries()) {
-  const sectionEvidence = new Set(section.evidence_ids || []);
-  const ranked = narrativeContentPages.map((page, pageIndex) => ({
-    page,
-    pageIndex,
-    overlap: [...sectionEvidence].filter(id => pageEvidence.get(page.id).has(id)).length
-  })).sort((left, right) => right.overlap - left.overlap || left.pageIndex - right.pageIndex);
-  const fallbackIndex = Math.min(Math.floor(index * narrativeContentPages.length / Math.max(narrative.sections.length, 1)), narrativeContentPages.length - 1);
-  const selectedPage = ranked[0]?.overlap > 0 ? ranked[0].page : narrativeContentPages[fallbackIndex];
-  narrativeAssignments.get(selectedPage.id).push(section);
+const narrativeModuleCoverage = new Map();
+for (const section of narrative.sections || []) {
+  if (!narrativeAssignments.has(section.reader_page_id)) throw new Error(`Narrative section ${section.id} has an invalid or unavailable reader_page_id: ${section.reader_page_id}`);
+  for (const moduleId of section.covered_module_ids || []) {
+    if (!moduleById.has(moduleId)) throw new Error(`Narrative section ${section.id} covers an unknown module: ${moduleId}`);
+    if (pagePlacements.get(moduleId) !== section.reader_page_id) throw new Error(`Narrative section ${section.id} places module ${moduleId} on the wrong reader page.`);
+    if (narrativeModuleCoverage.has(moduleId)) throw new Error(`Narrative module ${moduleId} is covered by more than one section.`);
+    narrativeModuleCoverage.set(moduleId, section.id);
+  }
+  narrativeAssignments.get(section.reader_page_id).push(section);
 }
 const stylePath = config.style_path ? resolvePath(config.style_path) : path.join(skillRoot, 'assets', 'excel-style.json');
 const style = JSON.parse(await fs.readFile(stylePath, 'utf8'));
@@ -205,21 +204,30 @@ function writeNarrativeSection(sheet, row, section) {
   }
   sourceLine(sheet, row, section.evidence_ids || []);
   row += 2;
-  narrativeLocations.push({
+  const location = {
     section_id: section.id,
     sheet: sheet.name,
     range: `A${startRow}:H${row - 1}`,
     evidence_ids: section.evidence_ids || []
-  });
+  };
+  narrativeLocations.push(location);
+  for (const moduleId of section.covered_module_ids || []) {
+    const module = moduleById.get(moduleId);
+    if (module && !module.tables?.length) moduleLocations.push({module_id: module.id, sheet: sheet.name, range: location.range, content_type: 'narrative', evidence_ids: module.evidence_ids});
+  }
   return row;
 }
 
-function writeModule(sheet, row, module) {
+function writeModule(sheet, row, module, includeAnalysis = true) {
   const startRow = row;
   band(sheet, row, module.title, C.sage);
-  paragraph(sheet, row + 1, module.analysis, C.paper);
-  sourceLine(sheet, row + 3, module.evidence_ids || []);
-  row += 5;
+  if (includeAnalysis) {
+    paragraph(sheet, row + 1, module.analysis, C.paper);
+    sourceLine(sheet, row + 3, module.evidence_ids || []);
+    row += 5;
+  } else {
+    row += 2;
+  }
   for (const table of module.tables || []) {
     if (table.columns.length > 8) throw new Error(`Module ${module.id} table ${table.title} exceeds eight columns.`);
     band(sheet, row, table.title, C.blue);
@@ -235,7 +243,7 @@ function writeModule(sheet, row, module) {
     module_id: module.id,
     sheet: sheet.name,
     range: `A${startRow}:H${endRow}`,
-    content_type: module.tables?.length ? 'narrative_and_table' : 'narrative',
+    content_type: module.tables?.length ? (includeAnalysis ? 'narrative_and_table' : 'table') : 'narrative',
     evidence_ids: module.evidence_ids
   });
   return row;
@@ -264,7 +272,8 @@ if (narrative.investment_points?.length) {
 }
 const investmentEnd = Math.max(summaryRow - 1, investmentStart);
 const investmentModule = moduleById.get('investment_points');
-if (investmentModule) moduleLocations.push({module_id: investmentModule.id, sheet: summary.name, range: `A${investmentStart}:H${investmentEnd}`, content_type: 'narrative_and_table', evidence_ids: investmentModule.evidence_ids});
+if (investmentModule && narrative.investment_points?.length) moduleLocations.push({module_id: investmentModule.id, sheet: summary.name, range: `A${investmentStart}:H${investmentEnd}`, content_type: 'narrative_and_table', evidence_ids: investmentModule.evidence_ids});
+else if (investmentModule) summaryRow = writeModule(summary, summaryRow, investmentModule);
 summaryRow += 1;
 band(summary, summaryRow, '论证路径', C.sage);
 summaryRow += 2;
@@ -298,7 +307,11 @@ for (const page of readerPages) {
     row += 2;
     for (const section of assignedSections) row = writeNarrativeSection(sheet, row, section);
   }
-  for (const module of page.modules) row = writeModule(sheet, row, module);
+  for (const module of page.modules) {
+    const coveredByNarrative = narrativeModuleCoverage.has(module.id);
+    if (coveredByNarrative && !module.tables?.length) continue;
+    row = writeModule(sheet, row, module, !coveredByNarrative);
+  }
 
   if (page.kind === 'decision') {
     band(sheet, row, '能够改变投资判断的事项', C.sand);

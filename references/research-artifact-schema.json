@@ -157,10 +157,12 @@
     },
     "section_blueprint": {
       "type": "object",
-      "required": ["title", "purpose", "evidence_ids"],
+      "required": ["title", "purpose", "reader_page_id", "covered_module_ids", "evidence_ids"],
       "properties": {
         "title": {"type": "string", "minLength": 4},
         "purpose": {"type": "string", "minLength": 12},
+        "reader_page_id": {"enum": ["industry", "product", "competition", "company", "financials", "decision"]},
+        "covered_module_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "pattern": "^[a-z][a-z0-9_]+$"}},
         "evidence_ids": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/evidence_ref"}}
       }
     },
@@ -227,10 +229,12 @@
     },
     "narrative_section": {
       "type": "object",
-      "required": ["id", "title", "paragraphs", "argument_chain", "evidence_ids", "table_justification"],
+      "required": ["id", "title", "reader_page_id", "covered_module_ids", "paragraphs", "argument_chain", "evidence_ids", "table_justification"],
       "properties": {
         "id": {"type": "string", "pattern": "^S[0-9]{2,3}$"},
         "title": {"type": "string", "minLength": 8},
+        "reader_page_id": {"enum": ["industry", "product", "competition", "company", "financials", "decision"]},
+        "covered_module_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "pattern": "^[a-z][a-z0-9_]+$"}},
         "paragraphs": {"type": "array", "minItems": 2, "items": {"type": "string", "minLength": 70}},
         "argument_chain": {"$ref": "#/$defs/argument_chain"},
         "evidence_ids": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/evidence_ref"}},
@@ -385,8 +389,8 @@
         },
         "quality_checks": {
           "type": "object",
-          "required": ["market_scope_separated", "investment_points_titled", "counterevidence_present", "primary_market_metrics_realistic", "industry_gate_passed", "company_gate_passed_or_not_applicable", "synthesis_gate_passed", "editorial_used_synthesis_only", "narrative_contract_passed", "content_contract_passed", "module_completion_passed", "artifact_reconciliation_passed", "all_sheets_rendered"],
-          "properties": {"market_scope_separated": {"type": "boolean"}, "investment_points_titled": {"type": "boolean"}, "counterevidence_present": {"type": "boolean"}, "primary_market_metrics_realistic": {"type": "boolean"}, "industry_gate_passed": {"type": "boolean"}, "company_gate_passed_or_not_applicable": {"type": "boolean"}, "synthesis_gate_passed": {"type": "boolean"}, "editorial_used_synthesis_only": {"type": "boolean"}, "narrative_contract_passed": {"type": "boolean"}, "content_contract_passed": {"type": "boolean"}, "module_completion_passed": {"type": "boolean"}, "artifact_reconciliation_passed": {"type": "boolean"}, "all_sheets_rendered": {"type": "boolean"}}
+          "required": ["market_scope_separated", "investment_points_titled", "counterevidence_present", "primary_market_metrics_realistic", "industry_gate_passed", "company_gate_passed_or_not_applicable", "competition_gate_passed", "synthesis_gate_passed", "editorial_used_synthesis_only", "narrative_contract_passed", "content_contract_passed", "module_completion_passed", "artifact_reconciliation_passed", "all_sheets_rendered"],
+          "properties": {"market_scope_separated": {"type": "boolean"}, "investment_points_titled": {"type": "boolean"}, "counterevidence_present": {"type": "boolean"}, "primary_market_metrics_realistic": {"type": "boolean"}, "industry_gate_passed": {"type": "boolean"}, "company_gate_passed_or_not_applicable": {"type": "boolean"}, "competition_gate_passed": {"type": "boolean"}, "synthesis_gate_passed": {"type": "boolean"}, "editorial_used_synthesis_only": {"type": "boolean"}, "narrative_contract_passed": {"type": "boolean"}, "content_contract_passed": {"type": "boolean"}, "module_completion_passed": {"type": "boolean"}, "artifact_reconciliation_passed": {"type": "boolean"}, "all_sheets_rendered": {"type": "boolean"}}
         },
         "limitations": {"type": "array"}
       }

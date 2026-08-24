@@ -7,15 +7,17 @@
 - `SKILL.md`：主编排 Skill
 - `subskills/team-research-intake`：任务卡与研究边界
 - `subskills/team-research-evidence`：证据台账、市场与技术研究
+- `subskills/team-research-company`：标的公司研究与公司交接包
 - `subskills/team-research-competition`：竞品地图与竞争判断
-- `subskills/team-research-synthesis`：行业、公司与竞争分析的综合判断门禁
-- `subskills/team-research-editorial`：咨询叙事稿
+- `subskills/team-research-synthesis`：综合判断与读者页面蓝图
+- `subskills/team-research-editorial`：带页面和模块归属的咨询叙事稿
+- `subskills/team-research-completion`：核心模块完成度审计
 - `subskills/team-research-delivery`：聊天与 Excel 交付
-- `subskills/team-research-quality`：证据、结构与版式验收
+- `subskills/team-research-quality`：跨阶段、来源、语义与版式验收
 
 ## 让 Agent 自动安装
 
-仓库根目录就是完整的 `team-industry-research` Skill 包。安装时必须保留 `SKILL.md`、`agents/`、`assets/`、`references/`、`scripts/` 和 `subskills/`。不要只下载根目录的 `SKILL.md`，也不要把七个阶段模块分别安装为互不关联的 Skill。
+仓库根目录就是完整的 `team-industry-research` Skill 包。安装时必须保留 `SKILL.md`、`agents/`、`assets/`、`references/`、`scripts/` 和 `subskills/`。不要只下载根目录的 `SKILL.md`，也不要把九个阶段模块分别安装为互不关联的 Skill。
 
 ### 通用安装指令
 
@@ -31,7 +33,7 @@ https://github.com/CYAndrea/inke-industry-analysis
 3. 主入口使用根目录 SKILL.md，识别名称应为 team-industry-research。
 4. 不要重新总结、改写或生成简化版本。
 5. 已存在同名 Skill 时不要覆盖，先报告冲突和现有位置。
-6. 安装后检查根目录及七个阶段子 Skill，并报告安装位置和验证结果。
+6. 安装后检查根目录及九个阶段子 Skill，并报告安装位置和验证结果。
 7. 本次只完成安装与验证，不执行行业研究。
 ```
 
@@ -90,7 +92,7 @@ https://github.com/CYAndrea/inke-industry-analysis/archive/refs/heads/main.zip
 1. 读取根目录 SKILL.md。
 2. 检查 references/output-profile-contracts.json。
 3. 检查 assets/excel-reader-pages.json。
-4. 检查 subskills 下七个阶段 Skill。
+4. 检查 subskills 下九个阶段 Skill。
 5. 列出识别到的九条输出路由。
 6. 只报告安装状态、路径、缺失文件和依赖风险，不执行正式研究。
 ```
@@ -99,10 +101,10 @@ https://github.com/CYAndrea/inke-industry-analysis/archive/refs/heads/main.zip
 
 研究方法、路由合同、证据规则和聊天交付依赖普通文件读取能力，在支持目录型 Skills 的 Agent 中具备较好的可移植性。Excel 生成器目前使用 Codex 环境中的 `@oai/artifact-tool`。Claude Code、Kimi Work 和其他 Agent 即使完成 Skill 安装，也可能因为缺少该依赖而无法直接执行 Excel 生成脚本。出现 `Cannot resolve @oai/artifact-tool` 时，应将其记录为运行依赖缺失，不能判断为 Skill 安装失败。
 
-安装后，主入口统一使用根目录的 `SKILL.md`，七个阶段模块由主 Skill 按顺序读取。用户无需分别安装子 Skill。
+安装后，主入口统一使用根目录的 `SKILL.md`，九个阶段模块由主 Skill 编排。公司分析与竞争研究在行业门禁后并行，用户无需分别安装子 Skill。
 
 用户已经指定聊天或 Excel 时直接进入对应路径。用户未指定时，Skill 先询问“本次希望以聊天格式还是 Excel 格式输出？”，收到选择后再开始正式研究与交付。
 
 研究框架采用三级路由：具体公司先核验全球上市状态并区分一级或二级市场，再判断所属行业侧重消费、科技或消费科技融合，最后进入公司研究。融合方向结合消费与科技两套模板。用户只给行业时完成对应方向的深度行业研究，并在第二级结束路由。
 
-每条输出路径都有固定的机器可读完成合同。研究在交付前逐模块核对规定要素、分析、证据和必要明细表。完整公司研究合并为八个读者页面，八页只限制工作表数量，不限制研究篇幅。完整叙事章节、模块分析与结构化表格均保留唯一可见位置。模块缺失、叙事缺失、证据无法回连、必要表格缺失或内容未进入成品时，校验器会阻止研究记录标记完成。
+每条输出路径都有固定的机器可读完成合同。研究在交付前逐模块核对规定要素、分析、证据和必要明细表。综合判断先给每个叙事章节确定读者页面和模块归属，交付脚本不再依据证据重合度猜测页面。完整公司研究合并为八个读者页面，八页只限制工作表数量，不限制研究篇幅。叙事正文与必要结构化表格保留唯一可见位置，模块审计正文不重复复制。模块缺失、叙事缺失、证据无法回连、必要表格缺失或内容未进入成品时，校验器会阻止研究记录标记完成。

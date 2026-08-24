@@ -11,14 +11,15 @@ description: 完成中文行业研究、公司投资研究、竞品扫描和项�
 | --- | --- | --- | --- |
 | 启动 | `subskills/team-research-intake/SKILL.md` | 精简任务边界 | `brief.json` |
 | 行业证据与分析 | `subskills/team-research-evidence/SKILL.md` | 行业结论交接包 | `evidence-ledger.json` 与 `industry-analysis.json` |
-| 公司与竞争 | `subskills/team-research-competition/SKILL.md` | 公司结论交接包或行业竞争地图 | `company-analysis.json` 与 `competition-map.json` |
+| 公司分析 | `subskills/team-research-company/SKILL.md` | 公司结论交接包或不适用标记 | `company-analysis.json` 或不适用标记 |
+| 竞争格局 | `subskills/team-research-competition/SKILL.md` | 竞争格局交接包 | `competition-map.json` |
 | 综合判断 | `subskills/team-research-synthesis/SKILL.md` | 综合结论交接包 | `analysis-synthesis.json` |
 | 叙事编辑 | `subskills/team-research-editorial/SKILL.md` | 聊天正文 | `narrative-draft.json` |
-| 模块完成审计 | `subskills/team-research-quality/SKILL.md` | 按回复逐项核对 | `completion-audit.json` |
+| 模块完成审计 | `subskills/team-research-completion/SKILL.md` | 按回复逐项核对 | `completion-audit.json` |
 | 交付制作 | `subskills/team-research-delivery/SKILL.md` | 最终回复 | Excel 文件与 `delivery-check.json` |
 | 质量验收 | `subskills/team-research-quality/SKILL.md` | 回复检查 | `research-record.json` 与对账结果 |
 
-按需读取并执行 `subskills/` 下的阶段模块。它们随主 Skill 一起安装，不要求用户额外安装并列目录。交付格式尚未确定时先完成格式确认并暂停。聊天与 Excel 都必须按“启动 → 行业证据与分析 → 公司与竞争 → 综合判断 → 叙事编辑 → 模块完成审计 → 交付 → 质量验收”顺序执行。只有行业时，公司分析阶段标记为不适用，但竞争地图仍需完成。聊天路径使用内部交接包，不创建形式性文件；Excel 路径保存全部阶段产物。任务卡未通过校验时不开始正式检索，综合判断未通过门禁时不开始读者版写作。模块完成审计必须使用 `references/output-profile-contracts.json`，逐项形成分析、证据和必要表格；交付前运行 `scripts/validate_artifact_bundle.py --record <research-record.json>`，对账失败时不得交付。
+按需读取并执行 `subskills/` 下的阶段模块。它们随主 Skill 一起安装，不要求用户额外安装并列目录。交付格式尚未确定时先完成格式确认并暂停。聊天与 Excel 都必须按“启动 → 行业证据与分析 → 公司分析与竞争格局并行 → 综合判断 → 叙事编辑 → 模块完成审计 → 交付 → 质量验收”执行。只有行业时，公司分析阶段标记为不适用，但竞争地图仍需完成。公司分析与竞争格局均以行业交接包为输入，二者完成后才能进入综合判断。聊天路径使用内部交接包，不创建形式性文件；Excel 路径保存全部阶段产物。任务卡未通过校验时不开始正式检索，综合判断未通过门禁时不开始读者版写作。模块完成审计必须使用 `references/output-profile-contracts.json`，逐项核对分析、证据和必要表格；交付前运行 `scripts/validate_artifact_bundle.py --record <research-record.json>`，对账失败时不得交付。
 
 主 Skill 资源按需读取：`references/research-blueprint.md` 用于研究结构，`references/output-profiles.md` 用于输出路由，`references/evidence-and-company-research.md` 用于证据与公司信息路由，`references/consulting-narrative.md` 用于读者版叙事，`references/semantic-quality.md` 用于语义验收，`references/deliverable-specs.md` 用于聊天与 Excel 交付，`references/visualization-system.md` 用于 Excel 可视化，`references/quality-gates.md` 用于质量门禁。Excel 使用 `assets/excel-style.json` 与 `scripts/build_research_excel.mjs`，不得重新编写整套格式系统。
 
@@ -35,8 +36,8 @@ description: 完成中文行业研究、公司投资研究、竞品扫描和项�
 - 只有行业时完成深度行业研究并在第二级结束。具体公司研究必须先覆盖所属行业，再把重点转向公司。
 - 行业方向选择消费、科技或消费科技融合。终端消费者、品牌和渠道主导利润时选择消费；产业客户、性能、成本、良率、可靠性、部署或认证主导购买时选择科技；消费需求、品牌渠道与技术路线、核心器件、工程能力同时直接影响购买、毛利和竞争壁垒时选择融合，并结合两套模板。
 - 一级市场公司重点覆盖创始人团队、估值、融资历程、主营业务或主要产品，以及业务与产品的具体分析和评价。二级市场公司重点覆盖上市主体、业务产品、财务、估值、竞争、催化剂和风险。
-- 公司研究以三至五个有标题的“投资要点”开场。
-- 成品报告以连贯咨询叙事为主体。分析标签、内部字段、检索步骤和项目符号不得替代读者版正文；数据表只承载横向比较信息。
+- 三至五个有标题的投资要点在综合判断阶段形成，并在公司研究成品开场呈现。公司分析阶段不得提前固定投资结论。
+- 成品报告以连贯咨询叙事为主体。综合判断阶段为每个章节确定读者页面、覆盖模块与证据编号，叙事编辑不得改变归属。分析标签、内部字段、检索步骤和项目符号不得替代读者版正文；数据表只承载横向比较信息。
 - 竞品比较写明类别与可比原因，并覆盖用户购买旅程中的非制造商角色。
 - 一级投资初步阶段只保留三至六个现实可得的核验动作。
 - 不输出综合打分、伪精确评分或无来源估值结论。
@@ -48,4 +49,4 @@ description: 完成中文行业研究、公司投资研究、竞品扫描和项�
 - 聊天交付保留关键来源直达链接、判断边界和待核验事项；Excel 交付完成逐表渲染与视觉核验。
 - 团队经验仅在用户确认后写入日志。
 - Excel 路径缺少阶段必交产物或模块审计未通过时停留在当前阶段并补齐；聊天路径根据问题范围保留必要分析，不创建形式性文件。不得先生成简版 Excel 再把未写入的研究内容留在后台交接包中。
-- Excel 的完整性由后台阶段产物与模块完成审计保证，读者版不得把每个验收模块机械映射为独立工作表。完整公司研究将全部模块合并为八个读者页面；只有行业时自动省略不适用的公司、财务和估值页面。八页只限制工作表数量，不限制行数、段落数、表格数或研究篇幅。`narrative-draft.json` 的全部正文段落必须原样写入读者页面，模块分析与结构化表格也必须完整保留，不得在交付阶段再次摘要、删减或用模块概述替代正文。每个核心模块和叙事章节分别在 `delivery-check.json` 中保留唯一可见位置，多个模块与章节可以位于同一工作表的不同区域。
+- Excel 的完整性由后台阶段产物与模块完成审计保证，读者版不得把每个验收模块机械映射为独立工作表。完整公司研究将全部模块合并为八个读者页面；只有行业时自动省略不适用的公司、财务和估值页面。八页只限制工作表数量，不限制行数、段落数、表格数或研究篇幅。`narrative-draft.json` 的全部正文段落必须原样写入指定 `reader_page_id`。结构化表格完整保留，模块审计中的分析正文只在没有对应叙事覆盖时写入，避免重复表达。交付阶段不得再次摘要、删减或用模块概述替代正文。每个核心模块和叙事章节分别在 `delivery-check.json` 中保留唯一可见位置，多个模块与章节可以位于同一工作表的不同区域。

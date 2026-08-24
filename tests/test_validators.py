@@ -80,15 +80,19 @@ def valid_brief():
 
 def valid_narrative():
     paragraph = "行业需求由政策替代和制造企业数字化共同推动，但项目制交付仍会限制规模化速度。企业需要验证标准产品收入占比、实施周期和续费情况，才能判断增长是否具有持续性。"
-    return {
-        "schema_version": 3,
-        "artifact_type": "narrative_draft",
-        "central_thesis": "行业需求保持增长，但标准化交付能力将决定企业能否把项目收入转化为持续经营优势。",
-        "argument_sequence": ["需求", "竞争"],
-        "investment_points": [],
-        "sections": [{
-            "id": "S01",
-            "title": "需求增长仍需经过交付效率验证",
+    page_layout = json.loads((ROOT / "assets" / "excel-reader-pages.json").read_text(encoding="utf-8"))
+    profile_modules = set(profile_module_ids())
+    sections = []
+    for page in page_layout["pages"]:
+        covered = [module_id for module_id in page["module_ids"] if module_id in profile_modules]
+        if page["kind"] in {"summary", "sources"} or not covered:
+            continue
+        index = len(sections) + 1
+        sections.append({
+            "id": f"S{index:02d}",
+            "title": f"{page['title']}仍需经过交付效率验证",
+            "reader_page_id": page["id"],
+            "covered_module_ids": covered,
             "paragraphs": [paragraph, paragraph],
             "argument_chain": {
                 "conclusion": "需求继续增长",
@@ -100,7 +104,14 @@ def valid_narrative():
             "evidence_ids": ["E01"],
             "table_justification": "",
             "visualizations": [],
-        }],
+        })
+    return {
+        "schema_version": 3,
+        "artifact_type": "narrative_draft",
+        "central_thesis": "行业需求保持增长，但标准化交付能力将决定企业能否把项目收入转化为持续经营优势。",
+        "argument_sequence": [section["title"] for section in sections],
+        "investment_points": [],
+        "sections": sections,
         "tracking_items": [],
         "editorial_checks": {
             "scaffolding_hidden": True,
@@ -144,6 +155,7 @@ def valid_industry_analysis():
 
 
 def valid_synthesis():
+    narrative = valid_narrative()
     return {
         "schema_version": 3,
         "artifact_type": "analysis_synthesis",
@@ -154,10 +166,13 @@ def valid_synthesis():
         "conflicts": [],
         "counterevidence": [valid_finding("交付约束仍可能压低增长")],
         "disproof_conditions": ["客户预算持续下降"],
-        "section_blueprint": [
-            {"title": "需求基础", "purpose": "解释行业增长来源及其持续条件。", "evidence_ids": ["E01"]},
-            {"title": "交付约束", "purpose": "解释交付效率如何影响增长质量。", "evidence_ids": ["E01"]},
-        ],
+        "section_blueprint": [{
+            "title": section["title"],
+            "purpose": "解释行业增长来源、交付约束及其投资含义。",
+            "reader_page_id": section["reader_page_id"],
+            "covered_module_ids": section["covered_module_ids"],
+            "evidence_ids": section["evidence_ids"],
+        } for section in narrative["sections"]],
         "handoff": valid_handoff(),
     }
 
@@ -315,7 +330,10 @@ class SchemaTests(unittest.TestCase):
             completion = valid_completion_audit()
             output = root / "report.xlsx"
             output.write_bytes(b"test")
-            reader_sheets = ["摘要与投资判断", "行业研究正文", "来源与待核验事项"]
+            page_layout = json.loads((ROOT / "assets" / "excel-reader-pages.json").read_text(encoding="utf-8"))
+            page_by_module = {module_id: page["title"] for page in page_layout["pages"] for module_id in page["module_ids"]}
+            page_title_by_id = {page["id"]: page["title"] for page in page_layout["pages"]}
+            reader_sheets = list(dict.fromkeys(["摘要与投资判断", *[page_title_by_id[section["reader_page_id"]] for section in narrative["sections"]], "来源与待核验事项"]))
             delivery = {
                 "schema_version": 3,
                 "artifact_type": "delivery_check",
@@ -330,17 +348,17 @@ class SchemaTests(unittest.TestCase):
                 "visualizations": [],
                 "module_locations": [{
                     "module_id": module["id"],
-                    "sheet": "行业研究正文",
+                    "sheet": page_by_module[module["id"]],
                     "range": "A1:H12",
                     "content_type": "narrative_and_table" if module["tables"] else "narrative",
                     "evidence_ids": ["E01"],
                 } for index, module in enumerate(completion["modules"])],
                 "narrative_locations": [{
-                    "section_id": "S01",
-                    "sheet": "行业研究正文",
+                    "section_id": section["id"],
+                    "sheet": page_title_by_id[section["reader_page_id"]],
                     "range": "A13:H20",
                     "evidence_ids": ["E01"],
-                }],
+                } for section in narrative["sections"]],
                 "passed": True,
             }
             names = {
@@ -387,6 +405,7 @@ class SchemaTests(unittest.TestCase):
                     "primary_market_metrics_realistic": True,
                     "industry_gate_passed": True,
                     "company_gate_passed_or_not_applicable": True,
+                    "competition_gate_passed": True,
                     "synthesis_gate_passed": True,
                     "editorial_used_synthesis_only": True,
                     "narrative_contract_passed": True,
@@ -431,6 +450,17 @@ class SchemaTests(unittest.TestCase):
             errors, _ = bundle.validate_bundle(record_path)
             self.assertTrue(any("delivery narrative locations do not match narrative draft" in item for item in errors))
             (root / "delivery.json").write_text(json.dumps(delivery, ensure_ascii=False), encoding="utf-8")
+
+            missing_coverage_narrative = copy.deepcopy(narrative)
+            removed_module = missing_coverage_narrative["sections"][0]["covered_module_ids"].pop()
+            missing_coverage_synthesis = copy.deepcopy(synthesis)
+            missing_coverage_synthesis["section_blueprint"][0]["covered_module_ids"].remove(removed_module)
+            (root / "narrative.json").write_text(json.dumps(missing_coverage_narrative, ensure_ascii=False), encoding="utf-8")
+            (root / "synthesis.json").write_text(json.dumps(missing_coverage_synthesis, ensure_ascii=False), encoding="utf-8")
+            errors, _ = bundle.validate_bundle(record_path)
+            self.assertTrue(any("narrative does not cover required modules" in item for item in errors))
+            (root / "narrative.json").write_text(json.dumps(narrative, ensure_ascii=False), encoding="utf-8")
+            (root / "synthesis.json").write_text(json.dumps(synthesis, ensure_ascii=False), encoding="utf-8")
 
             extra_claim = copy.deepcopy(ledger["claims"][0])
             extra_claim["id"] = "E02"
@@ -545,6 +575,13 @@ class StageGateCliTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("not approved by analysis_synthesis", result.stdout)
 
+    def test_narrative_gate_rejects_changed_page_assignment(self):
+        narrative = valid_narrative()
+        synthesis = valid_synthesis()
+        narrative["sections"][0]["reader_page_id"] = "decision"
+        errors = bundle.validate_narrative_source(narrative, synthesis)
+        self.assertTrue(any("preserve reader_page_id" in item for item in errors))
+
 
 class PortabilityTests(unittest.TestCase):
     def test_default_excel_config_has_no_style_absolute_path(self):
@@ -580,6 +617,15 @@ class DeliveryRoutingTests(unittest.TestCase):
 
 
 class DistributionDocsTests(unittest.TestCase):
+    def test_all_nine_stage_subskills_exist(self):
+        expected = {
+            "team-research-intake", "team-research-evidence", "team-research-company",
+            "team-research-competition", "team-research-synthesis", "team-research-editorial",
+            "team-research-completion", "team-research-delivery", "team-research-quality",
+        }
+        actual = {path.name for path in (ROOT / "subskills").iterdir() if path.is_dir()}
+        self.assertEqual(actual, expected)
+
     def test_readme_covers_agent_installation(self):
         text = (ROOT / "README.md").read_text(encoding="utf-8-sig")
         for required in (

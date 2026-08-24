@@ -8,6 +8,8 @@
     {
       "id": "S01",
       "title": "",
+      "reader_page_id": "industry",
+      "covered_module_ids": [],
       "paragraphs": [],
       "argument_chain": {"conclusion": "", "mechanism": "", "evidence": "", "investment_implication": "", "boundary": ""},
       "evidence_ids": [],
