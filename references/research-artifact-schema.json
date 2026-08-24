@@ -316,9 +316,19 @@
         "evidence_ids": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/evidence_ref"}}
       }
     },
+    "narrative_location": {
+      "type": "object",
+      "required": ["section_id", "sheet", "range", "evidence_ids"],
+      "properties": {
+        "section_id": {"type": "string", "minLength": 1},
+        "sheet": {"type": "string", "minLength": 1},
+        "range": {"type": "string", "minLength": 3},
+        "evidence_ids": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/evidence_ref"}}
+      }
+    },
     "delivery_check": {
       "type": "object",
-      "required": ["schema_version", "artifact_type", "file_path", "format", "sheets", "rendered_sheets", "clipped_text", "missing_links", "formula_errors", "visual_repairs", "visualizations", "module_locations", "passed"],
+      "required": ["schema_version", "artifact_type", "file_path", "format", "sheets", "rendered_sheets", "clipped_text", "missing_links", "formula_errors", "visual_repairs", "visualizations", "module_locations", "narrative_locations", "passed"],
       "properties": {
         "schema_version": {"const": 3},
         "artifact_type": {"const": "delivery_check"},
@@ -332,6 +342,7 @@
         "visual_repairs": {"type": "array"},
         "visualizations": {"type": "array", "items": {"$ref": "#/$defs/visualization_record"}},
         "module_locations": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/module_location"}},
+        "narrative_locations": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/narrative_location"}},
         "passed": {"const": true}
       }
     },

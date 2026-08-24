@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "max_reader_pages": 8,
+  "pages": [
+    {
+      "id": "summary",
+      "title": "摘要与投资判断",
+      "kind": "summary",
+      "module_ids": ["investment_points", "industry_outlook"]
+    },
+    {
+      "id": "industry",
+      "title": "行业概览与市场阶段",
+      "kind": "modules",
+      "module_ids": ["industry_scope", "market_size_stage"]
+    },
+    {
+      "id": "product",
+      "title": "用户产品与商业模式",
+      "kind": "modules",
+      "module_ids": ["consumer_demand", "consumer_product_brand", "integration_value_conversion"]
+    },
+    {
+      "id": "competition",
+      "title": "渠道供应链与竞争格局",
+      "kind": "modules",
+      "module_ids": ["consumer_channels_pricing", "consumer_supply_chain", "technology_stack_routes", "technology_engineering", "technology_supply_chain", "competition"]
+    },
+    {
+      "id": "company",
+      "title": "公司业务管理与治理",
+      "kind": "modules",
+      "module_ids": ["listing_identity", "founders_team", "management_ownership", "financing_history", "company_business_product", "consumer_company_execution", "technology_company_execution", "customer_validation"]
+    },
+    {
+      "id": "financials",
+      "title": "财务表现与盈利质量",
+      "kind": "modules",
+      "module_ids": ["financial_performance"]
+    },
+    {
+      "id": "decision",
+      "title": "估值催化剂与风险跟踪",
+      "kind": "decision",
+      "module_ids": ["valuation", "catalysts_risks_tracking", "diligence_actions"]
+    },
+    {
+      "id": "sources",
+      "title": "来源与待核验事项",
+      "kind": "sources",
+      "module_ids": ["sources_limitations"]
+    }
+  ]
+}

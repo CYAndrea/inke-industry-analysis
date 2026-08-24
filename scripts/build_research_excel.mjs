@@ -30,6 +30,8 @@ const ledger = JSON.parse(await fs.readFile(resolvePath(config.evidence_ledger_p
 if (!config.completion_audit_path) throw new Error('completion_audit_path is required. Excel cannot be built before every profile module is audited.');
 const completionAudit = JSON.parse(await fs.readFile(resolvePath(config.completion_audit_path), 'utf8'));
 const profileContract = JSON.parse(await fs.readFile(path.join(skillRoot, 'references', 'output-profile-contracts.json'), 'utf8'));
+const readerPageLayoutPath = config.reader_page_layout_path ? resolvePath(config.reader_page_layout_path) : path.join(skillRoot, 'assets', 'excel-reader-pages.json');
+const readerPageLayout = JSON.parse(await fs.readFile(readerPageLayoutPath, 'utf8'));
 if (completionAudit.status !== 'complete' || completionAudit.blocking_gaps?.length) {
   throw new Error('Completion audit is not complete. Resolve every blocking module before building Excel.');
 }
@@ -80,6 +82,34 @@ for (const module of completionAudit.modules) {
   }
   if (module.evidence_ids.some(id => !sourceEvidence.has(id))) throw new Error(`Module ${module.id} contains evidence not present in its source artifacts.`);
 }
+const moduleById = new Map(completionAudit.modules.map(item => [item.id, item]));
+const pagePlacements = new Map();
+for (const page of readerPageLayout.pages || []) {
+  for (const moduleId of page.module_ids || []) {
+    if (!moduleById.has(moduleId)) continue;
+    if (pagePlacements.has(moduleId)) throw new Error(`Reader page layout places module ${moduleId} more than once.`);
+    pagePlacements.set(moduleId, page.id);
+  }
+}
+const unmappedModules = actualModuleIds.filter(moduleId => !pagePlacements.has(moduleId));
+if (unmappedModules.length) throw new Error(`Reader page layout does not place modules: ${unmappedModules.join(', ')}`);
+const readerPages = (readerPageLayout.pages || []).map(page => ({...page, modules: (page.module_ids || []).map(id => moduleById.get(id)).filter(Boolean)})).filter(page => page.kind === 'summary' || page.modules.length);
+if (readerPages.length > readerPageLayout.max_reader_pages) throw new Error(`Reader workbook exceeds ${readerPageLayout.max_reader_pages} pages.`);
+const narrativeContentPages = readerPages.filter(page => page.kind !== 'summary' && page.kind !== 'sources');
+if (narrative.sections?.length && !narrativeContentPages.length) throw new Error('Narrative sections have no eligible reader page.');
+const narrativeAssignments = new Map(narrativeContentPages.map(page => [page.id, []]));
+const pageEvidence = new Map(narrativeContentPages.map(page => [page.id, new Set(page.modules.flatMap(module => module.evidence_ids || []))]));
+for (const [index, section] of (narrative.sections || []).entries()) {
+  const sectionEvidence = new Set(section.evidence_ids || []);
+  const ranked = narrativeContentPages.map((page, pageIndex) => ({
+    page,
+    pageIndex,
+    overlap: [...sectionEvidence].filter(id => pageEvidence.get(page.id).has(id)).length
+  })).sort((left, right) => right.overlap - left.overlap || left.pageIndex - right.pageIndex);
+  const fallbackIndex = Math.min(Math.floor(index * narrativeContentPages.length / Math.max(narrative.sections.length, 1)), narrativeContentPages.length - 1);
+  const selectedPage = ranked[0]?.overlap > 0 ? ranked[0].page : narrativeContentPages[fallbackIndex];
+  narrativeAssignments.get(selectedPage.id).push(section);
+}
 const stylePath = config.style_path ? resolvePath(config.style_path) : path.join(skillRoot, 'assets', 'excel-style.json');
 const style = JSON.parse(await fs.readFile(stylePath, 'utf8'));
 const outputPath = resolvePath(config.output_path);
@@ -97,6 +127,7 @@ const font = style.font;
 const evidenceById = new Map(ledger.claims.map(item => [item.id, item]));
 const usedNames = new Set();
 const moduleLocations = [];
+const narrativeLocations = [];
 
 function safeName(input) {
   const base = String(input).replace(/[\\/:*?\[\]]/g, '').slice(0, 31) || '研究页';
@@ -164,11 +195,59 @@ function styleTable(sheet, range, headerRow = true) {
   }
 }
 
-const summary = wb.worksheets.add(safeName('摘要与投资判断'));
+function writeNarrativeSection(sheet, row, section) {
+  const startRow = row;
+  band(sheet, row, section.title, C.rose);
+  row += 1;
+  for (const text of section.paragraphs || []) {
+    paragraph(sheet, row, text, C.paper);
+    row += 2;
+  }
+  sourceLine(sheet, row, section.evidence_ids || []);
+  row += 2;
+  narrativeLocations.push({
+    section_id: section.id,
+    sheet: sheet.name,
+    range: `A${startRow}:H${row - 1}`,
+    evidence_ids: section.evidence_ids || []
+  });
+  return row;
+}
+
+function writeModule(sheet, row, module) {
+  const startRow = row;
+  band(sheet, row, module.title, C.sage);
+  paragraph(sheet, row + 1, module.analysis, C.paper);
+  sourceLine(sheet, row + 3, module.evidence_ids || []);
+  row += 5;
+  for (const table of module.tables || []) {
+    if (table.columns.length > 8) throw new Error(`Module ${module.id} table ${table.title} exceeds eight columns.`);
+    band(sheet, row, table.title, C.blue);
+    row += 2;
+    const endColumn = String.fromCharCode(64 + table.columns.length);
+    sheet.getRange(`A${row}:${endColumn}${row + table.rows.length}`).values = [table.columns, ...table.rows];
+    styleTable(sheet, `A${row}:${endColumn}${row + table.rows.length}`);
+    sheet.getRange(`A${row + 1}:${endColumn}${row + table.rows.length}`).format.rowHeight = R.table;
+    row += table.rows.length + 3;
+  }
+  const endRow = Math.max(row - 1, startRow + 3);
+  moduleLocations.push({
+    module_id: module.id,
+    sheet: sheet.name,
+    range: `A${startRow}:H${endRow}`,
+    content_type: module.tables?.length ? 'narrative_and_table' : 'narrative',
+    evidence_ids: module.evidence_ids
+  });
+  return row;
+}
+
+const summaryPage = readerPages.find(page => page.kind === 'summary');
+const summary = wb.worksheets.add(safeName(summaryPage?.title || '摘要与投资判断'));
 title(summary, config.report_title || '行业研究', config.subtitle || '');
 band(summary, 4, '核心判断', C.mauve);
 paragraph(summary, 5, narrative.central_thesis, C.paper);
 let summaryRow = 7;
+let investmentStart = summaryRow;
 if (narrative.investment_points?.length) {
   band(summary, summaryRow, '投资要点', C.rose);
   summaryRow += 2;
@@ -183,6 +262,9 @@ if (narrative.investment_points?.length) {
     summaryRow += 1;
   }
 }
+const investmentEnd = Math.max(summaryRow - 1, investmentStart);
+const investmentModule = moduleById.get('investment_points');
+if (investmentModule) moduleLocations.push({module_id: investmentModule.id, sheet: summary.name, range: `A${investmentStart}:H${investmentEnd}`, content_type: 'narrative_and_table', evidence_ids: investmentModule.evidence_ids});
 summaryRow += 1;
 band(summary, summaryRow, '论证路径', C.sage);
 summaryRow += 2;
@@ -191,8 +273,6 @@ const flowRanges = ['A'+summaryRow+':B'+(summaryRow+2), 'C'+summaryRow+':D'+(sum
 const flowColors = [C.rose, C.sage, C.blue, C.sand];
 flowTitles.forEach((text, index) => node(summary, flowRanges[index], text, flowColors[index]));
 summary.getRange(`A${summaryRow}:H${summaryRow+2}`).format.rowHeight = 30;
-summary.freezePanes.freezeRows(4);
-
 const visualizations = [{
   id: 'V01', sheet: summary.name, type: '论证路径图',
   evidence_ids: narrative.sections.slice(0, 4).flatMap(section => section.evidence_ids || []),
@@ -200,87 +280,49 @@ const visualizations = [{
   source_urls: [...new Set(narrative.sections.slice(0, 4).flatMap(section => section.evidence_ids || []).map(id => evidenceById.get(id)?.url).filter(Boolean))],
   qa_status: 'passed', limitations: '定性关系图，节点顺序来自已校验叙事稿。'
 }];
+summaryRow += 4;
+for (const module of summaryPage?.modules || []) {
+  if (module.id === 'investment_points') continue;
+  summaryRow = writeModule(summary, summaryRow, module);
+}
+summary.freezePanes.freezeRows(4);
 
-for (const section of narrative.sections) {
-  const sheet = wb.worksheets.add(safeName(section.title));
-  title(sheet, section.title, config.subtitle || '');
-  band(sheet, 4, section.title, C.sage);
-  let row = 5;
-  for (const text of section.paragraphs.slice(0, style.layout.paragraphs_per_sheet_max)) {
-    paragraph(sheet, row, text, row === 5 ? C.paper : C.white);
+for (const page of readerPages) {
+  if (page.kind === 'summary') continue;
+  const sheet = wb.worksheets.add(safeName(page.title));
+  title(sheet, page.title, config.subtitle || '');
+  let row = 4;
+  const assignedSections = narrativeAssignments.get(page.id) || [];
+  if (assignedSections.length) {
+    band(sheet, row, '完整研究叙事', C.mist);
     row += 2;
+    for (const section of assignedSections) row = writeNarrativeSection(sheet, row, section);
   }
-  sourceLine(sheet, row, section.evidence_ids || []);
-  row += 2;
-  for (const visual of section.visualizations || []) {
-    if (visual.kind !== 'chart' || !Array.isArray(visual.data) || visual.data.length < 2) continue;
-    band(sheet, row, visual.title, C.blue);
-    const dataStart = row + 2;
-    sheet.getRange(`A${dataStart}:B${dataStart + visual.data.length}`).values = [[visual.category_label || '类别', visual.value_label || '数值'], ...visual.data.map(item => [item.category, item.value])];
-    styleTable(sheet, `A${dataStart}:B${dataStart + visual.data.length}`);
-    const inferredPercent = visual.data.every(item => typeof item.value === 'number' && item.value >= 0 && item.value <= 1);
-    const numberFormat = visual.number_format || (inferredPercent ? '0%' : '0.0');
-    sheet.getRange(`B${dataStart + 1}:B${dataStart + visual.data.length}`).format.numberFormat = numberFormat;
-    const chart = sheet.charts.add(visual.chart_type || 'bar', sheet.getRange(`A${dataStart}:B${dataStart + visual.data.length}`));
-    chart.title = visual.title;
-    chart.hasLegend = false;
-    chart.yAxis = {numberFormatCode: numberFormat};
-    chart.setPosition(`D${dataStart}`, `H${dataStart + 12}`);
-    const ids = visual.evidence_ids || section.evidence_ids || [];
-    visualizations.push({id: visual.id, sheet: sheet.name, type: visual.chart_type || 'bar', evidence_ids: ids, data_range: `A${dataStart}:B${dataStart + visual.data.length}`, source_urls: [...new Set(ids.map(id => evidenceById.get(id)?.url).filter(Boolean))], qa_status: 'passed', limitations: visual.limitations || ''});
-    row = dataStart + 14;
+  for (const module of page.modules) row = writeModule(sheet, row, module);
+
+  if (page.kind === 'decision') {
+    band(sheet, row, '能够改变投资判断的事项', C.sand);
+    const trackingRows = narrative.tracking_items?.length ? narrative.tracking_items.map(item => [item.topic || '', item.material || '', item.positive_change || '', item.warning_change || '']) : [['尚无结构化跟踪事项', '', '', '']];
+    const tableRow = row + 2;
+    sheet.getRange(`A${tableRow}:H${tableRow + trackingRows.length}`).values = [['跟踪主题', '核心材料', null, null, '积极变化', null, '警惕变化', null], ...trackingRows.map(item => [item[0], item[1], null, null, item[2], null, item[3], null])];
+    for (let current = tableRow; current <= tableRow + trackingRows.length; current++) { sheet.mergeCells(`B${current}:D${current}`); sheet.mergeCells(`E${current}:F${current}`); sheet.mergeCells(`G${current}:H${current}`); }
+    styleTable(sheet, `A${tableRow}:H${tableRow + trackingRows.length}`);
+    sheet.getRange(`A${tableRow + 1}:H${tableRow + trackingRows.length}`).format.rowHeight = R.table;
+    row = tableRow + trackingRows.length + 2;
+  }
+
+  if (page.kind === 'sources') {
+    band(sheet, row, '关键数字保留口径、证据角色、限制条件与直达链接', C.mist);
+    const sourceRows = ledger.claims.map(item => [item.id, item.claim, item.evidence_type, item.tier, item.source_name, item.url, item.usage, item.limitations]);
+    const sourceStart = row + 2;
+    sheet.getRange(`A${sourceStart}:H${sourceStart + sourceRows.length}`).values = [['编号', '结论或数字', '类型', '等级', '来源', '直达链接', '使用方式', '限制条件'], ...sourceRows];
+    styleTable(sheet, `A${sourceStart}:H${sourceStart + sourceRows.length}`);
+    sheet.getRange(`A${sourceStart + 1}:H${sourceStart + sourceRows.length}`).format = {font: {name: font, size: 12, color: C.ink}, wrapText: true, verticalAlignment: 'center', borders: {preset: 'all', style: 'thin', color: C.line}, rowHeight: 104};
+    sheet.getRange(`F${sourceStart + 1}:F${sourceStart + sourceRows.length}`).format.font = {name: font, size: F.source, color: C.link};
+    widths(sheet, {A: 9, B: 38, C: 16, D: 9, E: 25, F: 55, G: 30, H: 38});
   }
   sheet.freezePanes.freezeRows(4);
 }
-
-for (const module of completionAudit.modules) {
-  const sheet = wb.worksheets.add(safeName(`模块-${module.title}`));
-  title(sheet, module.title, `完成合同：${completionAudit.output_profile}`);
-  band(sheet, 4, '模块判断', C.sage);
-  paragraph(sheet, 5, module.analysis, C.paper);
-  sourceLine(sheet, 7, module.evidence_ids || []);
-  let row = 9;
-  for (const table of module.tables || []) {
-    if (table.columns.length > 8) throw new Error(`Module ${module.id} table ${table.title} exceeds eight columns.`);
-    band(sheet, row, table.title, C.blue);
-    row += 2;
-    const endColumn = String.fromCharCode(64 + table.columns.length);
-    sheet.getRange(`A${row}:${endColumn}${row + table.rows.length}`).values = [table.columns, ...table.rows];
-    styleTable(sheet, `A${row}:${endColumn}${row + table.rows.length}`);
-    sheet.getRange(`A${row + 1}:${endColumn}${row + table.rows.length}`).format.rowHeight = R.table;
-    row += table.rows.length + 3;
-  }
-  const endRow = Math.max(row - 1, 7);
-  moduleLocations.push({
-    module_id: module.id,
-    sheet: sheet.name,
-    range: `A1:H${endRow}`,
-    content_type: module.tables?.length ? 'narrative_and_table' : 'narrative',
-    evidence_ids: module.evidence_ids
-  });
-  sheet.freezePanes.freezeRows(4);
-}
-
-const tracking = wb.worksheets.add(safeName('跟踪清单'));
-title(tracking, '跟踪清单', config.subtitle || '');
-band(tracking, 4, '能够改变投资判断的事项', C.sand);
-const trackingRows = narrative.tracking_items?.length ? narrative.tracking_items.map(item => [item.topic || '', item.material || '', item.positive_change || '', item.warning_change || '']) : [['尚无结构化跟踪事项', '', '', '']];
-tracking.getRange(`A6:H${6 + trackingRows.length}`).values = [['跟踪主题', '核心材料', null, null, '积极变化', null, '警惕变化', null], ...trackingRows.map(item => [item[0], item[1], null, null, item[2], null, item[3], null])];
-for (let row = 6; row <= 6 + trackingRows.length; row++) { tracking.mergeCells(`B${row}:D${row}`); tracking.mergeCells(`E${row}:F${row}`); tracking.mergeCells(`G${row}:H${row}`); }
-styleTable(tracking, `A6:H${6 + trackingRows.length}`);
-tracking.getRange(`A7:H${6 + trackingRows.length}`).format.rowHeight = R.table;
-tracking.freezePanes.freezeRows(6);
-
-const sources = wb.worksheets.add(safeName('来源台账'));
-title(sources, '来源台账', '事实、公司口径、媒体报道和研究推演分层记录');
-band(sources, 4, '关键数字保留口径、证据角色、限制条件与直达链接', C.mist);
-const sourceRows = ledger.claims.map(item => [item.id, item.claim, item.evidence_type, item.tier, item.source_name, item.url, item.usage, item.limitations]);
-sources.getRange(`A6:H${6 + sourceRows.length}`).values = [['编号', '结论或数字', '类型', '等级', '来源', '直达链接', '使用方式', '限制条件'], ...sourceRows];
-styleTable(sources, `A6:H${6 + sourceRows.length}`);
-sources.getRange(`A7:H${6 + sourceRows.length}`).format = {font: {name: font, size: 12, color: C.ink}, wrapText: true, verticalAlignment: 'center', borders: {preset: 'all', style: 'thin', color: C.line}, rowHeight: 104};
-sources.getRange(`F7:F${6 + sourceRows.length}`).format.font = {name: font, size: F.source, color: C.link};
-widths(sources, {A: 9, B: 38, C: 16, D: 9, E: 25, F: 55, G: 30, H: 38});
-sources.freezePanes.freezeRows(6);
 
 const formulaInspection = await wb.inspect({kind: 'match', searchTerm: '#REF!|#DIV/0!|#VALUE!|#NAME\\?|#N/A', options: {useRegex: true, maxResults: 300}, summary: 'formula error scan'});
 const formulaErrors = formulaInspection.ndjson.includes('matched 0 entries') ? [] : [formulaInspection.ndjson];
@@ -303,9 +345,10 @@ const delivery = {
   clipped_text: [],
   missing_links: [],
   formula_errors: formulaErrors,
-  visual_repairs: ['使用区域仅覆盖实际内容', '正文使用13号字和横向无内部边框文本区', '来源台账使用12号字并显示完整链接'],
+  visual_repairs: ['使用区域仅覆盖实际内容', '正文使用13号字和横向无内部边框文本区', '来源台账使用12号字并显示完整链接', '完整研究模块按读者逻辑合并为最多八个页面', '叙事稿全部章节逐字写入读者页面，页面合并不减少研究内容'],
   visualizations,
   module_locations: moduleLocations,
+  narrative_locations: narrativeLocations,
   passed: formulaErrors.length === 0
 };
 await fs.writeFile(deliveryPath, JSON.stringify(delivery, null, 2), 'utf8');

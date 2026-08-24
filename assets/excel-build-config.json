@@ -12,5 +12,6 @@
   "output_path": "",
   "render_dir": "",
   "delivery_check_path": "",
-  "node_modules_path": ""
+  "node_modules_path": "",
+  "reader_page_layout_path": ""
 }
